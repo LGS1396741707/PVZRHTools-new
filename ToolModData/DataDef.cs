@@ -127,6 +127,7 @@ public struct InGameActions : ISyncData
     public bool? ReadMix { get; set; }
     public int? Row { get; set; }
     public bool? SetAward { get; set; }
+    public bool? DestroyAward { get; set; }
     public bool? SetZombieIdle { get; set; }
     public string? ShowText { get; set; }
     public bool? StartMower { get; set; }

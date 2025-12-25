@@ -773,6 +773,12 @@ public partial class ModifierViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public void DestroyAward()
+    {
+        App.DataSync.Value.SendData(new InGameActions { DestroyAward = true });
+    }
+
+    [RelayCommand]
     public void SetZombieIdle()
     {
         App.DataSync.Value.SendData(new InGameActions { SetZombieIdle = true });

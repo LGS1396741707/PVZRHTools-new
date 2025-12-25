@@ -144,6 +144,7 @@
     <s:String x:Key="Tab5.Description3">The key binding control comes from FastHotKeyForWPF, which is open sourced on Github.</s:String>
     <s:String x:Key="Tab6.Description">Game only supports single key bindings,which are only available in game.</s:String>
     <s:String x:Key="Tab2.Page2.SetAward">SetAward</s:String>
+    <s:String x:Key="Tab2.Page2.DestroyAward">DestroyAward</s:String>
     <s:String x:Key="Tab2.Page1.PlantVase">PlantVase</s:String>
     <s:String x:Key="Tab2.Page1.ZombieVase">ZombieVase</s:String>
     <s:String x:Key="Tab1.Page6.UltimateSuperGatling">UltimateSuperGatling</s:String>

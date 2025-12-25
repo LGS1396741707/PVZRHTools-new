@@ -1272,6 +1272,14 @@ all");
                 if (initBoard != null) initBoard.InitMower();
             }
             if (iga.SetAward is not null && Board.Instance != null) Lawnf.SetAward(Board.Instance, Vector2.zero);
+            if (iga.DestroyAward is not null && Board.Instance != null)
+            {
+                var prizes = FindObjectsOfType<PrizeMgr>();
+                foreach (var prize in prizes)
+                {
+                    try { Destroy(prize.gameObject); } catch { }
+                }
+            }
         }
 
         if (data is GameModes ga)

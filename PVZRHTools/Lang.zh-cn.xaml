@@ -153,6 +153,7 @@
     <s:String x:Key="Tab5.Description3">按键绑定控件来自于FastHotKeyForWPF，使用时务必切换成英文输入法！</s:String>
     <s:String x:Key="Tab6.Description">仅支持单键，按键仅在游戏内生效。</s:String>
     <s:String x:Key="Tab2.Page2.SetAward">直接生成奖杯</s:String>
+    <s:String x:Key="Tab2.Page2.DestroyAward">销毁场上奖杯</s:String>
     <s:String x:Key="Tab2.Page1.PlantVase">生成植物罐子</s:String>
     <s:String x:Key="Tab2.Page1.ZombieVase">生成僵尸罐子</s:String>
     <s:String x:Key="Tab2.Page1.RandomVase">生成随机罐子(需配置文件)</s:String>

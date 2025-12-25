@@ -140,6 +140,7 @@
     <s:String x:Key="Tab5.Description3">Элемент управления привязкой клавиш взят из FastHotKeyForWPF, который имеет открытый исходный код на Github.</s:String>
     <s:String x:Key="Tab6.Description">Игра поддерживает только одиночные привязки клавиш, которые доступны только в игре.</s:String>
     <s:String x:Key="Tab2.Page2.SetAward">Установить награду</s:String>
+    <s:String x:Key="Tab2.Page2.DestroyAward">Уничтожить награду</s:String>
     <s:String x:Key="Tab2.Page1.PlantVase">Ваза с растениями</s:String>
     <s:String x:Key="Tab2.Page1.ZombieVase">Ваза с зомби</s:String>
     <s:String x:Key="Tab1.Page6.UltimateSuperGatling">Ультимативный супер-гатлинг</s:String>
