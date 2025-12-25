@@ -30,12 +30,65 @@ public static class AlmanacCardZombiePatch
     }
 }
 
+/// <summary>
+/// 旧版植物图鉴补丁 - AlmanacCard.OnMouseDown
+/// </summary>
+[HarmonyPatch(typeof(AlmanacCard), "OnMouseDown")]
+public static class AlmanacCardPatch
+{
+    public static void Postfix(AlmanacCard __instance)
+    {
+        AlmanacSeedType = __instance.theSeedType;
+    }
+}
+
 [HarmonyPatch(typeof(AlmanacPlantCtrl), "GetSeedType")]
 public static class AlmanacPlantCtrlPatch
 {
     public static void Postfix(AlmanacPlantCtrl __instance)
     {
         AlmanacSeedType = __instance.plantSelected;
+    }
+}
+
+/// <summary>
+/// 新版图鉴UI补丁 - AlmanacCardUI.OnPointerDown
+/// </summary>
+[HarmonyPatch(typeof(AlmanacCardUI), "OnPointerDown")]
+public static class AlmanacCardUIPatch
+{
+    public static void Postfix(AlmanacCardUI __instance)
+    {
+        try
+        {
+            // 获取菜单名称来判断是植物还是僵尸图鉴
+            string menuName = __instance.menu?.name ?? "";
+
+            int plantId = (int)__instance.PlantType;
+            int zombieId = (int)__instance.ZombieType;
+
+            if (menuName.Contains("Plant"))
+            {
+                AlmanacSeedType = plantId;
+            }
+            else if (menuName.Contains("Zombie"))
+            {
+                AlmanacZombieType = (ZombieType)zombieId;
+            }
+            else
+            {
+                // 备用判断：根据ID值判断
+                if (plantId > 0)
+                {
+                    AlmanacSeedType = plantId;
+                }
+                else if (zombieId > 0)
+                {
+                    AlmanacZombieType = (ZombieType)zombieId;
+                }
+            }
+        }
+        catch { }
     }
 }
 
@@ -1253,13 +1306,45 @@ public class PatchMgr : MonoBehaviour
                             Mouse.Instance.mouseX);
                 }
 
+                // 植物罐子 - 使用 ScaryPot_plant 类型
                 if (Input.GetKeyDown(Core.KeyAlmanacCreatePlantVase.Value.Value) && AlmanacSeedType != -1)
-                    GridItem.SetGridItem(Mouse.Instance.theMouseColumn, Mouse.Instance.theMouseRow,
-                        GridItemType.ScaryPot).Cast<ScaryPot>().thePlantType = (PlantType)AlmanacSeedType;
+                {
+                    try
+                    {
+                        var gridItem = GridItem.SetGridItem(Mouse.Instance.theMouseColumn, Mouse.Instance.theMouseRow,
+                            GridItemType.ScaryPot_plant);
+                        if (gridItem != null)
+                        {
+                            var scaryPot = gridItem.GetComponent<ScaryPot>();
+                            if (scaryPot != null)
+                            {
+                                scaryPot.thePlantType = (PlantType)AlmanacSeedType;
+                            }
+                        }
+                    }
+                    catch { }
+                }
+
+                // 僵尸罐子 - 使用 ScaryPot_zombie 类型
                 if (Input.GetKeyDown(Core.KeyAlmanacCreateZombieVase.Value.Value) &&
                     AlmanacZombieType is not ZombieType.Nothing)
-                    GridItem.SetGridItem(Mouse.Instance.theMouseColumn, Mouse.Instance.theMouseRow,
-                        GridItemType.ScaryPot).Cast<ScaryPot>().theZombieType = AlmanacZombieType;
+                {
+                    try
+                    {
+                        var gridItem = GridItem.SetGridItem(Mouse.Instance.theMouseColumn, Mouse.Instance.theMouseRow,
+                            GridItemType.ScaryPot_zombie);
+                        if (gridItem != null)
+                        {
+                            var scaryPot = gridItem.GetComponent<ScaryPot>();
+                            if (scaryPot != null)
+                            {
+                                scaryPot.theZombieType = AlmanacZombieType;
+                            }
+                        }
+                    }
+                    catch { }
+                }
+
                 if (Input.GetKeyDown(Core.KeyRandomCard.Value.Value))
                     RandomCard = !RandomCard;
                 var t = Board.Instance.boardTag;

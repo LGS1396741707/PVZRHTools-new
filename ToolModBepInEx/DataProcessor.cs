@@ -1230,19 +1230,41 @@ all");
                             CreateZombie.Instance.SetZombie(row, (ZombieType)zombieType, x);
                 }
             }
-            
-            if (iga.StartMower is not null)
-                foreach (var i in FindObjectsOfTypeAll(Il2CppType.Of<Mower>()))
+
+            if (iga.StartMower is not null && Board.Instance != null && Board.Instance.mowerArray != null)
+            {
+                // 只启动 Board.Instance.mowerArray 中的小推车，避免启动预制体
+                foreach (var mower in Board.Instance.mowerArray)
+                {
                     try
                     {
-                        i.TryCast<Mower>()!.StartMove();
+                        if (mower != null) mower.StartMove();
                     }
-                    catch
-                    {
-                    }
+                    catch { }
+                }
+            }
 
             if (iga.CreateMower is not null && GameAPP.board != null)
             {
+                // 先清除现有的小推车，避免重复生成导致的问题
+                if (Board.Instance != null && Board.Instance.mowerArray != null)
+                {
+                    for (var i = Board.Instance.mowerArray.Count - 1; i >= 0; i--)
+                    {
+                        try
+                        {
+                            var mower = Board.Instance.mowerArray[i];
+                            if (mower != null)
+                            {
+                                Destroy(mower.gameObject);
+                            }
+                        }
+                        catch { }
+                    }
+                    Board.Instance.mowerArray.Clear();
+                }
+                
+                // 重新生成小推车
                 var initBoard = GameAPP.board.GetComponent<InitBoard>();
                 if (initBoard != null) initBoard.InitMower();
             }
