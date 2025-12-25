@@ -1390,29 +1390,6 @@ public static class PresentPatchA
 {
     public static bool Prefix(Present __instance)
     {
-#if false
-        foreach (var plant in __instance.board.plantArray)
-            try
-            {
-                if (plant.thePlantRow == __instance.thePlantRow && plant.thePlantColumn == __instance.thePlantColumn)
-                {
-                    if(plant.thePlantType==__instance.thePlantType)
-                        MelonLogger.Msg("TRUE");
-                    var array = MixData.data.Cast<Array>();
-                    for (int i = 0; i < array.Length; i++)
-                    {
-                        var element = array.GetValue(i);
-                        MelonLogger.Msg($"{i}: {element}");
-                    }
-
-                    MelonLogger.Msg($"{plant.thePlantRow},{plant.thePlantColumn},{plant.thePlantType}");
-                    return true;
-                }
-            }
-            catch
-            {
-            }
-#endif
         if (LockPresent >= 0)
         {
             CreatePlant.Instance.SetPlant(__instance.thePlantColumn, __instance.thePlantRow, (PlantType)LockPresent);
@@ -1443,6 +1420,52 @@ public static class PresentPatchB
     public static void Postfix(Present __instance)
     {
         if (PresentFastOpen && (int)__instance.thePlantType != 245) __instance.AnimEvent();
+    }
+}
+
+[HarmonyPatch(typeof(Present), "AnimEvent")]
+public static class PresentPatchC
+{
+    public static bool Prefix(Present __instance)
+    {
+        // 检查是否是PvE布阵的礼盒（第3行，第1-5列）
+        if (__instance.thePlantRow == 2)
+        {
+            int lockPlantType = -1;
+            switch (__instance.thePlantColumn)
+            {
+                case 0: lockPlantType = LockPresent1; break;
+                case 1: lockPlantType = LockPresent2; break;
+                case 2: lockPlantType = LockPresent3; break;
+                case 3: lockPlantType = LockPresent4; break;
+                case 4: lockPlantType = LockPresent5; break;
+            }
+            
+            if (lockPlantType >= 0)
+            {
+                var col = __instance.thePlantColumn;
+                var row = __instance.thePlantRow;
+                var pos = __instance.transform.position;
+                
+                // 创建粒子效果
+                CreateParticle.SetParticle(11, pos, row, true);
+                
+                // 先销毁礼盒，释放位置
+                __instance.Die();
+                
+                // 再创建指定植物
+                CreatePlant.Instance.SetPlant(col, row, (PlantType)lockPlantType);
+                if (CreatePlant.Instance.IsPuff((PlantType)lockPlantType))
+                {
+                    CreatePlant.Instance.SetPlant(col, row, (PlantType)lockPlantType);
+                    CreatePlant.Instance.SetPlant(col, row, (PlantType)lockPlantType);
+                }
+                
+                return false; // 阻止原始AnimEvent执行
+            }
+        }
+        
+        return true; // 继续执行原始AnimEvent
     }
 }
 
