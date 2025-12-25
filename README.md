@@ -2,8 +2,6 @@
 
 自己比较菜，但试图去做吧。
 
-
-
 # PVZRHTools
 
 ## 项目简介
@@ -31,8 +29,6 @@ PVZRHTools 是《植物大战僵尸：融合版》的修改器工具，由 @Infi
 感谢[@MC屑鱼](https://space.bilibili.com/3493077316536784)(Github:[@SalmonCN-RH](https://github.com/SalmonCN-RH/))的技术支持
 
 感谢[@高数带我飞](https://space.bilibili.com/1117414477)(Github:[@LibraHp](https://github.com/LibraHp/))的技术支持    
-
-
 
 ## 修改器更新日志
 
