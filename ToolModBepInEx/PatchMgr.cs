@@ -725,6 +725,69 @@ public static class ZombieExplodeProtectionPatches
 
 #endregion
 
+#region UnlimitedSunlight - 阳光无上限补丁
+
+/// <summary>
+/// 阳光无上限补丁 - 取消50000阳光存储上限限制
+/// </summary>
+[HarmonyPatch(typeof(Board))]
+public static class UnlimitedSunlightPatches
+{
+    /// <summary>
+    /// 修改GetSun方法 - 移除50000阳光上限限制
+    /// </summary>
+    [HarmonyPatch(nameof(Board.GetSun))]
+    [HarmonyPrefix]
+    public static bool Prefix_GetSun(Board __instance, int count, int r, bool save)
+    {
+        if (!UnlimitedSunlight) return true;
+
+        try
+        {
+            if (__instance != null)
+            {
+                int count_1 = 2 * count;
+                int count_2 = 4 * count_1;
+                int theSun_1 = r * (count_2 + __instance.theSun);
+                int newSun = (theSun_1 - __instance.theSun) / 10 + 5;
+                __instance.theSun = __instance.theSun + newSun;
+
+                if (save)
+                {
+                    int extraSun = __instance.extraSun - theSun_1 + theSun_1;
+                    __instance.extraSun = extraSun;
+                    __instance.extraSun %= 50;
+                }
+            }
+            return false;
+        }
+        catch { return true; }
+    }
+
+    /// <summary>
+    /// 修改UseSun方法 - 确保使用阳光时不受上限限制
+    /// </summary>
+    [HarmonyPatch(nameof(Board.UseSun))]
+    [HarmonyPrefix]
+    public static bool Prefix_UseSun(Board __instance, int count)
+    {
+        if (!UnlimitedSunlight) return true;
+
+        try
+        {
+            if (__instance != null)
+            {
+                __instance.theSun -= count;
+                __instance.theUsedSun += count;
+            }
+            return false;
+        }
+        catch { return true; }
+    }
+}
+
+#endregion
+
 [HarmonyPatch(typeof(DroppedCard), "Update")]
 public static class DroppedCardPatch
 {
@@ -1576,6 +1639,7 @@ public class PatchMgr : MonoBehaviour
     public static bool ZombieSeaLow { get; set; } = false;
     public static bool DisableIceEffect { get; set; } = false;
     public static bool PotSmashingFix { get; set; } = false;
+    public static bool UnlimitedSunlight { get; set; } = false;
 
     public void Update()
     {
