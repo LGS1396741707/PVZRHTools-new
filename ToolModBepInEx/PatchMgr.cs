@@ -1322,8 +1322,9 @@ public static class PlantCrashedPatch
     [HarmonyPrefix]
     public static bool Prefix(Plant __instance, int level, int soundID, Zombie zombie)
     {
-        // 植物无敌或植物免疫踩踏碾压时，阻止碾压
-        if (HardPlant || CrushTrampleImmunity)
+        // 植物无敌或植物免疫碾压时，阻止碾压
+        // 注意：踩踏免疫由 TypeMgrUncrashablePlantPatch 和 ZombieOnTriggerStay2DTramplePatch 处理
+        if (HardPlant || CrushImmunity)
         {
             return false;
         }
@@ -1512,15 +1513,15 @@ public static class ZombieTakeDamageCursePatch
 
 /// <summary>
 /// 诅咒免疫补丁 - Board.Update
-/// 定期清除植物的诅咒视觉效果，并设置踩踏碾压免疫属性
+/// 定期清除植物的诅咒视觉效果，并设置踩踏免疫属性
 /// </summary>
 [HarmonyPatch(typeof(Board), nameof(Board.Update))]
 public static class BoardUpdateCursePatch
 {
     private static float _curseClearTimer = 0f;
     private const float _curseClearInterval = 1f;
-    private static float _crushTrampleImmunityTimer = 0f;
-    private const float _crushTrampleImmunityInterval = 0.1f;
+    private static float _trampleImmunityTimer = 0f;
+    private const float _trampleImmunityInterval = 0.1f;
     
     [HarmonyPostfix]
     public static void Postfix()
@@ -1538,13 +1539,13 @@ public static class BoardUpdateCursePatch
                 }
             }
             
-            // 处理踩踏碾压免疫 - 通过设置 canBeCrashed 属性
-            if (CrushTrampleImmunity)
+            // 处理踩踏免疫 - 通过设置 canBeCrashed 属性
+            if (TrampleImmunity)
             {
-                _crushTrampleImmunityTimer += Time.deltaTime;
-                if (_crushTrampleImmunityTimer >= _crushTrampleImmunityInterval)
+                _trampleImmunityTimer += Time.deltaTime;
+                if (_trampleImmunityTimer >= _trampleImmunityInterval)
                 {
-                    _crushTrampleImmunityTimer = 0f;
+                    _trampleImmunityTimer = 0f;
                     SetAllPlantsCanBeCrashed(false);
                 }
             }
@@ -1629,10 +1630,10 @@ public static class BoardUpdateCursePatch
 
 #endregion
 
-#region CrushTrampleImmunity - 踩踏碾压免疫补丁
+#region TrampleImmunity - 踩踏免疫补丁
 
 /// <summary>
-/// 踩踏碾压免疫补丁 - TypeMgr.UncrashablePlant
+/// 踩踏免疫补丁 - TypeMgr.UncrashablePlant
 /// 这是游戏判断植物是否免疫碾压的核心方法
 /// Boss类领袖等僵尸会调用此方法来判断是否可以碾压植物
 /// 参考 SuperMachinePot 的 TypeMgrUncrashablePlantPatch 实现
@@ -1643,14 +1644,14 @@ public static class TypeMgrUncrashablePlantPatch
     [HarmonyPrefix]
     public static bool Prefix(ref Plant plant, ref bool __result)
     {
-        if (!CrushTrampleImmunity) return true;
+        if (!TrampleImmunity) return true;
         
         try
         {
             if (plant == null)
                 return true;
 
-            // 当踩踏碾压免疫开启时，所有植物都免疫碾压
+            // 当踩踏免疫开启时，所有植物都免疫碾压
             __result = true;
             return false; // 不执行原方法
         }
@@ -1661,17 +1662,17 @@ public static class TypeMgrUncrashablePlantPatch
 }
 
 /// <summary>
-/// 踩踏碾压免疫补丁 - Zombie.OnTriggerStay2D
+/// 踩踏免疫补丁 - Zombie.OnTriggerStay2D
 /// 作为备用保护，阻止驾驶类僵尸（如冰车）对植物的踩踏伤害
 /// 主要保护逻辑在 TypeMgrUncrashablePlantPatch 中实现
 /// </summary>
 [HarmonyPatch(typeof(Zombie), nameof(Zombie.OnTriggerStay2D))]
-public static class ZombieOnTriggerStay2DCrushTramplePatch
+public static class ZombieOnTriggerStay2DTramplePatch
 {
     [HarmonyPrefix]
     public static bool Prefix(Collider2D collision, Zombie __instance)
     {
-        if (!CrushTrampleImmunity) return true;
+        if (!TrampleImmunity) return true;
         
         try
         {
@@ -2229,7 +2230,8 @@ public class PatchMgr : MonoBehaviour
     public static bool HardPlant { get; set; } = false;
     public static bool ImmuneForceDeduct { get; set; } = false;
     public static bool CurseImmunity { get; set; } = false;
-    public static bool CrushTrampleImmunity { get; set; } = false;
+    public static bool CrushImmunity { get; set; } = false;
+    public static bool TrampleImmunity { get; set; } = false;
     public static Dictionary<int, int> PlantHealthCache { get; set; } = [];
     public static Dictionary<Zombie.FirstArmorType, int> Health1st { get; set; } = [];
     public static Dictionary<Zombie.SecondArmorType, int> Health2nd { get; set; } = [];
