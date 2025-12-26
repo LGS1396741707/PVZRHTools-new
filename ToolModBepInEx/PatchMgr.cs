@@ -1476,17 +1476,24 @@ public static class SuperLadderZombieGetDamagePatch
 }
 
 /// <summary>
-/// 诅咒免疫补丁 - Zombie.TakeDamage
+/// 诅咒免疫补丁 - Zombie.TakeDamage (4参数版本)
 /// 通用诅咒免疫，清除僵尸的诅咒植物列表
+/// 同时处理僵尸限伤200功能
 /// </summary>
-[HarmonyPatch(typeof(Zombie), nameof(Zombie.TakeDamage))]
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.TakeDamage), new Type[] { typeof(DmgType), typeof(int), typeof(PlantType), typeof(bool) })]
 public static class ZombieTakeDamageCursePatch
 {
     private static System.Reflection.FieldInfo _cachedCursedPlantsField = null;
     
     [HarmonyPrefix]
-    public static bool Prefix(Zombie __instance, DmgType theDamageType, ref int theDamage, bool fix)
+    public static bool Prefix(Zombie __instance, DmgType theDamageType, ref int theDamage, PlantType reportType, bool fix)
     {
+        // 僵尸限伤100功能 - 限制每次伤害最多100点
+        if (ZombieDamageLimit200 && theDamage > 100)
+        {
+            theDamage = 100;
+        }
+        
         if (!CurseImmunity) return true;
         try
         {
@@ -1507,6 +1514,83 @@ public static class ZombieTakeDamageCursePatch
             }
         }
         catch { }
+        return true;
+    }
+}
+
+/// <summary>
+/// 僵尸限伤100补丁 - Zombie.BodyTakeDamage
+/// 限制僵尸身体每次受到的伤害最多100点
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.BodyTakeDamage))]
+public static class ZombieBodyTakeDamageLimitPatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(Zombie __instance, ref int theDamage)
+    {
+        // 僵尸限伤100功能 - 限制每次伤害最多100点
+        if (ZombieDamageLimit200 && theDamage > 100)
+        {
+            theDamage = 100;
+        }
+        return true;
+    }
+}
+
+/// <summary>
+/// 僵尸限伤100补丁 - Zombie.FirstArmorTakeDamage
+/// 限制僵尸一类护甲每次受到的伤害最多100点
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.FirstArmorTakeDamage))]
+public static class ZombieFirstArmorTakeDamageLimitPatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(Zombie __instance, ref int theDamage)
+    {
+        // 僵尸限伤100功能 - 限制每次伤害最多100点
+        if (ZombieDamageLimit200 && theDamage > 100)
+        {
+            theDamage = 100;
+        }
+        return true;
+    }
+}
+
+/// <summary>
+/// 僵尸限伤100补丁 - Zombie.SecondArmorTakeDamage
+/// 限制僵尸二类护甲每次受到的伤害最多100点
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.SecondArmorTakeDamage))]
+public static class ZombieSecondArmorTakeDamageLimitPatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(Zombie __instance, ref int theDamage)
+    {
+        // 僵尸限伤100功能 - 限制每次伤害最多100点
+        if (ZombieDamageLimit200 && theDamage > 100)
+        {
+            theDamage = 100;
+        }
+        return true;
+    }
+}
+
+/// <summary>
+/// 僵尸限伤100补丁 - Zombie.JalaedExplode (灰烬伤害)
+/// 限制僵尸受到的灰烬爆炸伤害最多100点
+/// 方法签名: void JalaedExplode(bool jala, int damage)
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.JalaedExplode))]
+public static class ZombieJalaedExplodeLimitPatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(Zombie __instance, bool jala, ref int damage)
+    {
+        // 僵尸限伤100功能 - 限制灰烬伤害最多100点
+        if (ZombieDamageLimit200 && damage > 100)
+        {
+            damage = 100;
+        }
         return true;
     }
 }
@@ -2300,6 +2384,7 @@ public class PatchMgr : MonoBehaviour
     public static bool PotSmashingFix { get; set; } = false;
     public static bool UnlimitedSunlight { get; set; } = false;
     public static bool MagnetNutUnlimited { get; set; } = false;
+    public static bool ZombieDamageLimit200 { get; set; } = false;
 
     public void Update()
     {

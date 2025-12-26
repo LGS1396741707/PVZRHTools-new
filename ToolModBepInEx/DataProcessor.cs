@@ -231,6 +231,7 @@ public class DataProcessor : MonoBehaviour
             if (p1.PotSmashingFix is not null) PotSmashingFix = (bool)p1.PotSmashingFix;
             if (p1.UnlimitedSunlight is not null) UnlimitedSunlight = (bool)p1.UnlimitedSunlight;
             if (p1.MagnetNutUnlimited is not null) MagnetNutUnlimited = (bool)p1.MagnetNutUnlimited;
+            if (p1.ZombieDamageLimit200 is not null) ZombieDamageLimit200 = (bool)p1.ZombieDamageLimit200;
             return;
         }
 
