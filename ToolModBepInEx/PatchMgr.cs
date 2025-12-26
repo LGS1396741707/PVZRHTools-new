@@ -1322,18 +1322,10 @@ public static class PlantCrashedPatch
     [HarmonyPrefix]
     public static bool Prefix(Plant __instance, int level, int soundID, Zombie zombie)
     {
-        // 植物无敌、植物免疫碾压或踩踏免疫时，阻止碾压
-        if (HardPlant || CrushImmunity || TrampleImmunity)
+        // 植物无敌或植物免疫碾压时，阻止碾压
+        // 注意：踩踏免疫由 TypeMgrUncrashablePlantPatch 和 ZombieOnTriggerStay2DTramplePatch 处理
+        if (HardPlant || CrushImmunity)
         {
-            // 踩踏免疫时，可选对僵尸进行击退
-            if (TrampleImmunity && zombie != null)
-            {
-                try
-                {
-                    zombie.KnockBack(2.0f, Zombie.KnockBackReason.ByJalapeno);
-                }
-                catch { }
-            }
             return false;
         }
         return true;
