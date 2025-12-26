@@ -37,6 +37,7 @@ public struct ModifierSaveModel
     public bool HammerNoCD { get; set; }
     public bool HardPlant { get; set; }
     public bool ImmuneForceDeduct { get; set; }
+    public bool CurseImmunity { get; set; }
     public List<HotkeyUIVM> Hotkeys { get; set; }
     public bool HyponoEmperorNoCD { get; set; }
     public bool IsMindCtrl { get; set; }

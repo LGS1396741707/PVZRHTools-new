@@ -1423,6 +1423,164 @@ public static class PlantDiePatch
     }
 }
 
+#region CurseImmunity - 诅咒免疫补丁
+
+/// <summary>
+/// 诅咒免疫补丁 - UltimateHorse.GetDamage
+/// 阻止终极马僵尸的诅咒效果
+/// </summary>
+[HarmonyPatch(typeof(UltimateHorse), nameof(UltimateHorse.GetDamage))]
+public static class UltimateHorseGetDamagePatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(UltimateHorse __instance, ref int theDamage)
+    {
+        if (!CurseImmunity) return true;
+        try
+        {
+            // 如果诅咒免疫激活，清空诅咒植物列表
+            if (__instance != null && __instance.cursedPlants != null && __instance.cursedPlants.Count > 0)
+            {
+                __instance.cursedPlants.Clear();
+            }
+        }
+        catch { }
+        return true;
+    }
+}
+
+/// <summary>
+/// 诅咒免疫补丁 - SuperLadderZombie.GetDamage
+/// 阻止超级梯子僵尸的诅咒效果
+/// </summary>
+[HarmonyPatch(typeof(SuperLadderZombie), nameof(SuperLadderZombie.GetDamage))]
+public static class SuperLadderZombieGetDamagePatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(SuperLadderZombie __instance, ref int theDamage)
+    {
+        if (!CurseImmunity) return true;
+        try
+        {
+            // 如果诅咒免疫激活且有梯子，阻止诅咒效果
+            if (__instance != null && __instance.ladder != null)
+            {
+                return false; // 阻止原方法执行
+            }
+        }
+        catch { }
+        return true;
+    }
+}
+
+/// <summary>
+/// 诅咒免疫补丁 - Zombie.TakeDamage
+/// 通用诅咒免疫，清除僵尸的诅咒植物列表
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.TakeDamage))]
+public static class ZombieTakeDamageCursePatch
+{
+    private static System.Reflection.FieldInfo _cachedCursedPlantsField = null;
+    
+    [HarmonyPrefix]
+    public static bool Prefix(Zombie __instance, DmgType theDamageType, ref int theDamage, bool fix)
+    {
+        if (!CurseImmunity) return true;
+        try
+        {
+            // 性能优化：缓存字段信息
+            if (_cachedCursedPlantsField == null)
+            {
+                _cachedCursedPlantsField = typeof(Zombie).GetField("cursedPlants",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            }
+            
+            if (_cachedCursedPlantsField != null)
+            {
+                var cursedPlants = _cachedCursedPlantsField.GetValue(__instance) as Il2CppSystem.Collections.Generic.List<Plant>;
+                if (cursedPlants != null && cursedPlants.Count > 0)
+                {
+                    cursedPlants.Clear();
+                }
+            }
+        }
+        catch { }
+        return true;
+    }
+}
+
+/// <summary>
+/// 诅咒免疫补丁 - Board.Update
+/// 定期清除植物的诅咒视觉效果
+/// </summary>
+[HarmonyPatch(typeof(Board), nameof(Board.Update))]
+public static class BoardUpdateCursePatch
+{
+    private static float _curseClearTimer = 0f;
+    private const float _curseClearInterval = 1f;
+    
+    [HarmonyPostfix]
+    public static void Postfix()
+    {
+        if (!CurseImmunity) return;
+        
+        try
+        {
+            _curseClearTimer += Time.deltaTime;
+            if (_curseClearTimer >= _curseClearInterval)
+            {
+                _curseClearTimer = 0f;
+                ClearAllPlantsCurseVisual();
+            }
+        }
+        catch { }
+    }
+    
+    private static void ClearAllPlantsCurseVisual()
+    {
+        try
+        {
+            if (Board.Instance == null) return;
+            
+            var allPlants = Lawnf.GetAllPlants();
+            if (allPlants == null) return;
+            
+            foreach (var plant in allPlants)
+            {
+                if (plant != null && plant.thePlantHealth > 0)
+                {
+                    ClearPlantCurseVisual(plant);
+                }
+            }
+        }
+        catch { }
+    }
+    
+    private static void ClearPlantCurseVisual(Plant plant)
+    {
+        try
+        {
+            if (plant == null || plant.gameObject == null) return;
+            
+            var spriteRenderers = plant.GetComponentsInChildren<SpriteRenderer>();
+            if (spriteRenderers != null)
+            {
+                foreach (var sr in spriteRenderers)
+                {
+                    if (sr != null)
+                    {
+                        // 重置颜色到白色（正常状态）
+                        sr.color = Color.white;
+                    }
+                }
+            }
+        }
+        catch { }
+    }
+}
+
+#endregion
+
 // 注释掉 PotatoMine.Update patch，改用 PatchMgr.Update 中的实现
 // 原因：Il2Cpp 对象池在高频 Harmony patch 中会导致栈溢出
 /*
@@ -1952,6 +2110,7 @@ public class PatchMgr : MonoBehaviour
     public static bool HammerNoCD { get; set; } = false;
     public static bool HardPlant { get; set; } = false;
     public static bool ImmuneForceDeduct { get; set; } = false;
+    public static bool CurseImmunity { get; set; } = false;
     public static Dictionary<int, int> PlantHealthCache { get; set; } = [];
     public static Dictionary<Zombie.FirstArmorType, int> Health1st { get; set; } = [];
     public static Dictionary<Zombie.SecondArmorType, int> Health2nd { get; set; } = [];

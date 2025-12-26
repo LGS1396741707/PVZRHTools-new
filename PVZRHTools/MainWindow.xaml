@@ -551,6 +551,11 @@
                                                   VerticalAlignment="Top" Foreground="#FF333333" BorderThickness="2,2,2,2"
                                                   HorizontalAlignment="Left" Margin="0,0,10,0"
                                                   ToolTip="{DynamicResource Tab1.Page6.ImmuneForceDeduct.Tooltip}" />
+                                        <CheckBox x:Name="CurseImmunity" IsChecked="{Binding CurseImmunity}"
+                                                  Content="{DynamicResource Tab1.Page6.CurseImmunity}" Height="21"
+                                                  VerticalAlignment="Top" Foreground="#FF333333" BorderThickness="2,2,2,2"
+                                                  HorizontalAlignment="Left" Margin="0,0,10,0"
+                                                  ToolTip="{DynamicResource Tab1.Page6.CurseImmunity.Tooltip}" />
                                         <CheckBox x:Name="NoHole" IsChecked="{Binding NoHole}"
                                                   Content="{DynamicResource Tab1.Page6.NoHole}" Height="21"
                                                   VerticalAlignment="Top" Foreground="#FF333333" BorderThickness="2,2,2,2"

@@ -31,6 +31,7 @@ public struct BasicProperties : ISyncData
     public bool? HammerNoCD { get; set; }
     public bool? HardPlant { get; set; }
     public bool? ImmuneForceDeduct { get; set; }
+    public bool? CurseImmunity { get; set; }
     public bool? HyponoEmperorNoCD { get; set; }
     public readonly int ID => 2;
     public bool? ItemExistForever { get; set; }
