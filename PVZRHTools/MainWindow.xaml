@@ -532,6 +532,7 @@
                                               Content="{DynamicResource Tab1.Page5.GarlicDay}" Height="21"
                                               Margin="499,10,0,0" VerticalAlignment="Top" Foreground="#FF333333"
                                               BorderThickness="2,2,2,2" HorizontalAlignment="Left" />
+
                                 </Grid>
                             </Expander>
                             <Expander Header="{DynamicResource Tab1.Page6.Header}"
