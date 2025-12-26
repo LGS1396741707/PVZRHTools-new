@@ -262,8 +262,7 @@ public partial class ModifierViewModel : ObservableObject
         HardPlant = s.HardPlant;
         ImmuneForceDeduct = s.ImmuneForceDeduct;
         CurseImmunity = s.CurseImmunity;
-        CrushImmunity = s.CrushImmunity;
-        TrampleImmunity = s.TrampleImmunity;
+        CrushTrampleImmunity = s.CrushTrampleImmunity;
         HyponoEmperorNoCD = s.HyponoEmperorNoCD;
         IsMindCtrl = s.IsMindCtrl;
         ItemExistForever = s.ItemExistForever;
@@ -709,8 +708,7 @@ public partial class ModifierViewModel : ObservableObject
             HardPlant = HardPlant,
             ImmuneForceDeduct = ImmuneForceDeduct,
             CurseImmunity = CurseImmunity,
-            CrushImmunity = CrushImmunity,
-            TrampleImmunity = TrampleImmunity,
+            CrushTrampleImmunity = CrushTrampleImmunity,
             HyponoEmperorNoCD = HyponoEmperorNoCD,
             IsMindCtrl = IsMindCtrl,
             ItemExistForever = ItemExistForever,
@@ -867,8 +865,7 @@ public partial class ModifierViewModel : ObservableObject
                 HardPlant = HardPlant,
                 ImmuneForceDeduct = ImmuneForceDeduct,
                 CurseImmunity = CurseImmunity,
-                CrushImmunity = CrushImmunity,
-                TrampleImmunity = TrampleImmunity,
+                CrushTrampleImmunity = CrushTrampleImmunity,
                 HyponoEmperorNoCD = HyponoEmperorNoCD,
                 ItemExistForever = ItemExistForever,
                 JackboxNotExplode = JackboxNotExplode,
@@ -1191,14 +1188,9 @@ public partial class ModifierViewModel : ObservableObject
         App.DataSync.Value.SendData(new BasicProperties { CurseImmunity = value });
     }
 
-    partial void OnCrushImmunityChanged(bool value)
+    partial void OnCrushTrampleImmunityChanged(bool value)
     {
-        App.DataSync.Value.SendData(new BasicProperties { CrushImmunity = value });
-    }
-
-    partial void OnTrampleImmunityChanged(bool value)
-    {
-        App.DataSync.Value.SendData(new BasicProperties { TrampleImmunity = value });
+        App.DataSync.Value.SendData(new BasicProperties { CrushTrampleImmunity = value });
     }
 
     partial void OnHyponoEmperorNoCDChanged(bool value)
@@ -1593,9 +1585,7 @@ public partial class ModifierViewModel : ObservableObject
 
     [ObservableProperty] public partial bool CurseImmunity { get; set; }
 
-    [ObservableProperty] public partial bool CrushImmunity { get; set; }
-
-    [ObservableProperty] public partial bool TrampleImmunity { get; set; }
+    [ObservableProperty] public partial bool CrushTrampleImmunity { get; set; }
 
     [ObservableProperty] public partial int Health1stType { get; set; }
 
