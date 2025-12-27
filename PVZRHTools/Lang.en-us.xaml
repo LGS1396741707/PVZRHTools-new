@@ -86,6 +86,8 @@
     <s:String x:Key="Tab1.Page6.CrushImmunity.Tooltip">Plants are immune to crush attacks from Gargantuar zombies</s:String>
     <s:String x:Key="Tab1.Page6.TrampleImmunity">CrushImmunity</s:String>
     <s:String x:Key="Tab1.Page6.TrampleImmunity.Tooltip">Plants are immune to trample damage from driver zombies like Zomboni and Boss leader's forced crush</s:String>
+    <s:String x:Key="Tab1.Page6.PickaxeImmunity">PickaxeImmunity</s:String>
+    <s:String x:Key="Tab1.Page6.PickaxeImmunity.Tooltip">Plants are immune to pickaxe zombie's digging attack</s:String>
     <s:String x:Key="Tab1.Page6.NoHole">NoHole</s:String>
     <s:String x:Key="Tab1.Page6.HyponoEmperorNoCD">HyponoEmperorNoCD</s:String>
     <s:String x:Key="Tab1.Page6.MineNoCD">MineNoCD</s:String>

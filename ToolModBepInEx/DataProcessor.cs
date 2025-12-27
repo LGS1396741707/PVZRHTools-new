@@ -237,6 +237,7 @@ public class DataProcessor : MonoBehaviour
             if (p1.ZombieSpeedMultiplier is not null) ZombieSpeedMultiplier = (float)p1.ZombieSpeedMultiplier;
             if (p1.ZombieAttackMultiplierEnabled is not null) ZombieAttackMultiplierEnabled = (bool)p1.ZombieAttackMultiplierEnabled;
             if (p1.ZombieAttackMultiplier is not null) ZombieAttackMultiplier = (float)p1.ZombieAttackMultiplier;
+            if (p1.PickaxeImmunity is not null) PickaxeImmunity = (bool)p1.PickaxeImmunity;
             return;
         }
 

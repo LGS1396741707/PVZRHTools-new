@@ -85,6 +85,8 @@
     <s:String x:Key="Tab1.Page6.CrushImmunity.Tooltip">Растения невосприимчивы к атакам раздавливания от зомби-гигантов</s:String>
     <s:String x:Key="Tab1.Page6.TrampleImmunity">Иммунитет к раздавливанию</s:String>
     <s:String x:Key="Tab1.Page6.TrampleImmunity.Tooltip">Растения невосприимчивы к урону от затаптывания зомби-водителей и принудительному раздавливанию от боссов</s:String>
+    <s:String x:Key="Tab1.Page6.PickaxeImmunity">Иммунитет к кирке</s:String>
+    <s:String x:Key="Tab1.Page6.PickaxeImmunity.Tooltip">Растения невосприимчивы к атаке копания зомби-шахтёра</s:String>
     <s:String x:Key="Tab1.Page6.NoHole">Без дыр</s:String>
     <s:String x:Key="Tab1.Page6.HyponoEmperorNoCD">Гипно император без перезарядки</s:String>
     <s:String x:Key="Tab1.Page6.MineNoCD">Мины без перезарядки</s:String>

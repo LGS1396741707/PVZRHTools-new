@@ -1201,6 +1201,11 @@ public partial class ModifierViewModel : ObservableObject
         App.DataSync.Value.SendData(new BasicProperties { TrampleImmunity = value });
     }
 
+    partial void OnPickaxeImmunityChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { PickaxeImmunity = value });
+    }
+
     partial void OnHyponoEmperorNoCDChanged(bool value)
     {
         App.DataSync.Value.SendData(new BasicProperties { HyponoEmperorNoCD = value });
@@ -1626,6 +1631,8 @@ public partial class ModifierViewModel : ObservableObject
     [ObservableProperty] public partial bool CrushImmunity { get; set; }
 
     [ObservableProperty] public partial bool TrampleImmunity { get; set; }
+
+    [ObservableProperty] public partial bool PickaxeImmunity { get; set; }
 
     [ObservableProperty] public partial int Health1stType { get; set; }
 

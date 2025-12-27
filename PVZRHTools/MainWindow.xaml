@@ -567,6 +567,11 @@
                                                   VerticalAlignment="Top" Foreground="#FF333333" BorderThickness="2,2,2,2"
                                                   HorizontalAlignment="Left" Margin="0,0,10,0"
                                                   ToolTip="{DynamicResource Tab1.Page6.TrampleImmunity.Tooltip}" />
+                                        <CheckBox x:Name="PickaxeImmunity" IsChecked="{Binding PickaxeImmunity}"
+                                                  Content="{DynamicResource Tab1.Page6.PickaxeImmunity}" Height="21"
+                                                  VerticalAlignment="Top" Foreground="#FF333333" BorderThickness="2,2,2,2"
+                                                  HorizontalAlignment="Left" Margin="0,0,10,0"
+                                                  ToolTip="{DynamicResource Tab1.Page6.PickaxeImmunity.Tooltip}" />
                                         <CheckBox x:Name="NoHole" IsChecked="{Binding NoHole}"
                                                   Content="{DynamicResource Tab1.Page6.NoHole}" Height="21"
                                                   VerticalAlignment="Top" Foreground="#FF333333" BorderThickness="2,2,2,2"

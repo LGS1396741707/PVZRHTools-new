@@ -86,6 +86,8 @@
     <s:String x:Key="Tab1.Page6.CrushImmunity.Tooltip">植物免疫巨人僵尸等的碾压攻击</s:String>
     <s:String x:Key="Tab1.Page6.TrampleImmunity">植物免疫碾压</s:String>
     <s:String x:Key="Tab1.Page6.TrampleImmunity.Tooltip">植物免疫冰车等驾驶类僵尸的踩踏伤害，以及Boss类领袖的强制碾压</s:String>
+    <s:String x:Key="Tab1.Page6.PickaxeImmunity">植物免疫矿镐</s:String>
+    <s:String x:Key="Tab1.Page6.PickaxeImmunity.Tooltip">植物免疫矿工僵尸的挖掘攻击</s:String>
     <s:String x:Key="Tab1.Page6.NoHole">不生成坑洞</s:String>
     <s:String x:Key="Tab1.Page6.HyponoEmperorNoCD">魅帝菇无CD</s:String>
     <s:String x:Key="Tab1.Page6.MineNoCD">地雷无CD</s:String>

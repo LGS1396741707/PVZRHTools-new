@@ -1709,6 +1709,56 @@ public static class ZombieAttackMultiplierPatch
 }
 
 /// <summary>
+/// 矿镐免疫补丁 - Pickaxe_a.ZombieUpdate
+/// 阻止第一种矿工挖掘植物
+/// </summary>
+[HarmonyPatch(typeof(Pickaxe_a), nameof(Pickaxe_a.ZombieUpdate))]
+public static class Pickaxe_aImmunityPatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(Pickaxe_a __instance)
+    {
+        if (!PickaxeImmunity) return true;
+        try
+        {
+            // 检查矿工是否有攻击目标
+            if (__instance?.theAttackTarget != null)
+            {
+                // 阻止挖掘任何植物
+                return false;
+            }
+        }
+        catch { }
+        return true;
+    }
+}
+
+/// <summary>
+/// 矿镐免疫补丁 - PickaxeZombie.ZombieUpdate
+/// 阻止第二种矿工挖掘植物
+/// </summary>
+[HarmonyPatch(typeof(PickaxeZombie), nameof(PickaxeZombie.ZombieUpdate))]
+public static class PickaxeZombieImmunityPatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(PickaxeZombie __instance)
+    {
+        if (!PickaxeImmunity) return true;
+        try
+        {
+            // 检查矿工是否有攻击目标
+            if (__instance?.theAttackTarget != null)
+            {
+                // 阻止挖掘任何植物
+                return false;
+            }
+        }
+        catch { }
+        return true;
+    }
+}
+
+/// <summary>
 /// 诅咒免疫补丁 - Board.Update
 /// 定期清除植物的诅咒视觉效果，并设置踩踏免疫属性
 /// </summary>
@@ -2503,6 +2553,7 @@ public class PatchMgr : MonoBehaviour
     public static float ZombieSpeedMultiplier { get; set; } = 1.0f;
     public static bool ZombieAttackMultiplierEnabled { get; set; } = false;
     public static float ZombieAttackMultiplier { get; set; } = 1.0f;
+    public static bool PickaxeImmunity { get; set; } = false;
 
     public void Update()
     {
