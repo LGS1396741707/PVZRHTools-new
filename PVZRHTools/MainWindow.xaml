@@ -667,6 +667,17 @@
                                                           VerticalAlignment="Top" HorizontalAlignment="Left"
                                                           ToolTip="{DynamicResource Tab1.Page6_5.ZombieSpeedMultiplier.Tooltip}" />
                                     </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,51,0,0">
+                                        <CheckBox x:Name="ZombieAttackMultiplierEnabled" IsChecked="{Binding ZombieAttackMultiplierEnabled}"
+                                                  Content="{DynamicResource Tab1.Page6_5.ZombieAttackMultiplier}" Height="21"
+                                                  VerticalAlignment="Top" Foreground="#FF333333" BorderThickness="2,2,2,2"
+                                                  HorizontalAlignment="Left" Margin="0,0,10,0"
+                                                  ToolTip="{DynamicResource Tab1.Page6_5.ZombieAttackMultiplier.Tooltip}" />
+                                        <hc:NumericUpDown x:Name="ZombieAttackMultiplier" Value="{Binding ZombieAttackMultiplier}"
+                                                          Minimum="0.1" Maximum="100" Width="100" Height="25" DecimalPlaces="2" Increment="0.5"
+                                                          VerticalAlignment="Top" HorizontalAlignment="Left"
+                                                          ToolTip="{DynamicResource Tab1.Page6_5.ZombieAttackMultiplierValue.Tooltip}" />
+                                    </StackPanel>
                                 </Grid>
                             </Expander>
                             <Expander Header="{DynamicResource Tab1.Page7.Header}"

@@ -66,6 +66,8 @@ public struct BasicProperties : ISyncData
     public int? ZombieDamageLimitValue { get; set; }
     public bool? ZombieSpeedModifyEnabled { get; set; }
     public float? ZombieSpeedMultiplier { get; set; }
+    public bool? ZombieAttackMultiplierEnabled { get; set; }
+    public float? ZombieAttackMultiplier { get; set; }
 }
 
 [Serializable]

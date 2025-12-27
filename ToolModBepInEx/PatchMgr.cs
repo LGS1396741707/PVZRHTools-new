@@ -1659,6 +1659,56 @@ public static class ZombieSpeedModifyPatch
 }
 
 /// <summary>
+/// 僵尸攻击力翻倍补丁 - Zombie.AttackEffect
+/// 通过在AttackEffect的Prefix中修改僵尸的攻击伤害来实现全局攻击力倍率调整
+/// AttackEffect是僵尸实际对植物造成伤害时调用的方法
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.AttackEffect))]
+public static class ZombieAttackMultiplierPatch
+{
+    // 用于存储每个僵尸的原始攻击力，避免重复乘以倍率
+    private static readonly Dictionary<int, int> _originalAttackDamages = new Dictionary<int, int>();
+    
+    [HarmonyPrefix]
+    public static void Prefix(Zombie __instance)
+    {
+        if (!ZombieAttackMultiplierEnabled || ZombieAttackMultiplier == 1.0f) return;
+        try
+        {
+            if (__instance == null) return;
+            
+            int instanceId = __instance.GetInstanceID();
+            
+            // 如果是第一次处理这个僵尸，记录其原始攻击力
+            if (!_originalAttackDamages.ContainsKey(instanceId))
+            {
+                _originalAttackDamages[instanceId] = __instance.theAttackDamage;
+            }
+            
+            int originalDamage = _originalAttackDamages[instanceId];
+            int newDamage = Mathf.RoundToInt(originalDamage * ZombieAttackMultiplier);
+            
+            // 修改僵尸的攻击伤害
+            __instance.theAttackDamage = newDamage;
+        }
+        catch { }
+    }
+    
+    // 清理已死亡僵尸的记录，避免内存泄漏
+    public static void CleanupDeadZombies()
+    {
+        try
+        {
+            if (_originalAttackDamages.Count > 1000)
+            {
+                _originalAttackDamages.Clear();
+            }
+        }
+        catch { }
+    }
+}
+
+/// <summary>
 /// 诅咒免疫补丁 - Board.Update
 /// 定期清除植物的诅咒视觉效果，并设置踩踏免疫属性
 /// </summary>
@@ -2451,6 +2501,8 @@ public class PatchMgr : MonoBehaviour
     public static int ZombieDamageLimitValue { get; set; } = 100;
     public static bool ZombieSpeedModifyEnabled { get; set; } = false;
     public static float ZombieSpeedMultiplier { get; set; } = 1.0f;
+    public static bool ZombieAttackMultiplierEnabled { get; set; } = false;
+    public static float ZombieAttackMultiplier { get; set; } = 1.0f;
 
     public void Update()
     {
