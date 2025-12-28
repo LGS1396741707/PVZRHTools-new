@@ -2261,6 +2261,287 @@ public static class ZombieOnTriggerStay2DTramplePatch
 
 #endregion
 
+#region ZombieStatusCoexist - 僵尸状态并存补丁
+
+/// <summary>
+/// 僵尸状态并存补丁 - Zombie.Warm
+/// 当启用状态并存时，只有在僵尸同时有红温和寒冷状态时才阻止Warm方法
+/// 这样可以保护并存状态，同时允许正常的冻结解除
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.Warm))]
+public static class ZombieWarmPatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(Zombie __instance)
+    {
+        if (!ZombieStatusCoexist) return true;
+        
+        try
+        {
+            if (__instance == null) return true;
+            
+            // 只有当僵尸同时有红温状态和寒冷/冻结状态时才阻止Warm
+            // 这样可以保护并存状态
+            bool hasWarm = __instance.isJalaed || __instance.isEmbered;
+            bool hasCold = __instance.coldTimer > 0 || __instance.freezeTimer > 0;
+            
+            if (hasWarm && hasCold)
+            {
+                return false; // 阻止原方法执行，保护并存状态
+            }
+        }
+        catch { }
+        
+        return true; // 正常执行
+    }
+}
+
+/// <summary>
+/// 僵尸状态并存补丁 - Zombie.Unfreezing
+/// 当启用状态并存时，只有在僵尸同时有红温和冻结状态时才阻止
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.Unfreezing))]
+public static class ZombieUnfreezingPatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(Zombie __instance)
+    {
+        if (!ZombieStatusCoexist) return true;
+        
+        try
+        {
+            if (__instance == null) return true;
+            
+            // 只有当僵尸同时有红温状态和冻结状态时才阻止Unfreezing
+            bool hasWarm = __instance.isJalaed || __instance.isEmbered;
+            bool hasFrozen = __instance.freezeTimer > 0;
+            
+            if (hasWarm && hasFrozen)
+            {
+                return false; // 阻止原方法执行，保护并存状态
+            }
+        }
+        catch { }
+        
+        return true; // 正常执行
+    }
+}
+
+/// <summary>
+/// 僵尸状态并存补丁 - Zombie.SetCold
+/// 当启用状态并存时，SetCold不会清除红温状态
+/// 原版游戏中SetCold内部会清除红温状态（isJalaed = false）
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.SetCold))]
+public static class ZombieSetColdCoexistPatch
+{
+    // 用于临时存储僵尸的红温状态
+    private static readonly Dictionary<int, (bool isJalaed, bool isEmbered)> _savedWarmStates = new Dictionary<int, (bool, bool)>();
+    
+    [HarmonyPrefix]
+    public static void Prefix(Zombie __instance)
+    {
+        if (!ZombieStatusCoexist) return;
+        
+        try
+        {
+            if (__instance == null) return;
+            
+            int instanceId = __instance.GetInstanceID();
+            
+            // 保存当前的红温状态
+            _savedWarmStates[instanceId] = (__instance.isJalaed, __instance.isEmbered);
+        }
+        catch { }
+    }
+    
+    [HarmonyPostfix]
+    public static void Postfix(Zombie __instance)
+    {
+        if (!ZombieStatusCoexist) return;
+        
+        try
+        {
+            if (__instance == null) return;
+            
+            int instanceId = __instance.GetInstanceID();
+            
+            // 恢复红温状态
+            if (_savedWarmStates.TryGetValue(instanceId, out var savedState))
+            {
+                __instance.isJalaed = savedState.isJalaed;
+                __instance.isEmbered = savedState.isEmbered;
+                _savedWarmStates.Remove(instanceId);
+            }
+        }
+        catch { }
+    }
+}
+
+/// <summary>
+/// 僵尸状态并存补丁 - Zombie.SetFreeze
+/// 当启用状态并存时，SetFreeze不会清除红温状态
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.SetFreeze))]
+public static class ZombieSetFreezeCoexistPatch
+{
+    // 用于临时存储僵尸的红温状态
+    private static readonly Dictionary<int, (bool isJalaed, bool isEmbered)> _savedWarmStates = new Dictionary<int, (bool, bool)>();
+    
+    [HarmonyPrefix]
+    public static void Prefix(Zombie __instance)
+    {
+        if (!ZombieStatusCoexist) return;
+        
+        try
+        {
+            if (__instance == null) return;
+            
+            int instanceId = __instance.GetInstanceID();
+            
+            // 保存当前的红温状态
+            _savedWarmStates[instanceId] = (__instance.isJalaed, __instance.isEmbered);
+        }
+        catch { }
+    }
+    
+    [HarmonyPostfix]
+    public static void Postfix(Zombie __instance)
+    {
+        if (!ZombieStatusCoexist) return;
+        
+        try
+        {
+            if (__instance == null) return;
+            
+            int instanceId = __instance.GetInstanceID();
+            
+            // 恢复红温状态
+            if (_savedWarmStates.TryGetValue(instanceId, out var savedState))
+            {
+                __instance.isJalaed = savedState.isJalaed;
+                __instance.isEmbered = savedState.isEmbered;
+                _savedWarmStates.Remove(instanceId);
+            }
+        }
+        catch { }
+    }
+}
+
+/// <summary>
+/// 僵尸状态并存补丁 - Zombie.SetPoison
+/// 确保蒜毒状态可以与其他状态并存
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.SetPoison))]
+public static class ZombieSetPoisonCoexistPatch
+{
+    // 用于临时存储僵尸的红温和寒冷状态（包括freezeTimer）
+    private static readonly Dictionary<int, (bool isJalaed, bool isEmbered, float coldTimer, float freezeTimer, int freezeLevel)> _savedStates = new Dictionary<int, (bool, bool, float, float, int)>();
+    
+    [HarmonyPrefix]
+    public static void Prefix(Zombie __instance)
+    {
+        if (!ZombieStatusCoexist) return;
+        
+        try
+        {
+            if (__instance == null) return;
+            
+            int instanceId = __instance.GetInstanceID();
+            
+            // 保存当前的红温和寒冷状态（包括freezeTimer）
+            _savedStates[instanceId] = (__instance.isJalaed, __instance.isEmbered, __instance.coldTimer, __instance.freezeTimer, __instance.freezeLevel);
+        }
+        catch { }
+    }
+    
+    [HarmonyPostfix]
+    public static void Postfix(Zombie __instance)
+    {
+        if (!ZombieStatusCoexist) return;
+        
+        try
+        {
+            if (__instance == null) return;
+            
+            int instanceId = __instance.GetInstanceID();
+            
+            // 恢复红温和寒冷状态（包括freezeTimer）
+            if (_savedStates.TryGetValue(instanceId, out var savedState))
+            {
+                __instance.isJalaed = savedState.isJalaed;
+                __instance.isEmbered = savedState.isEmbered;
+                __instance.coldTimer = savedState.coldTimer;
+                __instance.freezeTimer = savedState.freezeTimer;
+                __instance.freezeLevel = savedState.freezeLevel;
+                _savedStates.Remove(instanceId);
+            }
+        }
+        catch { }
+    }
+}
+
+/// <summary>
+/// 僵尸状态并存补丁 - Zombie.SetJalaed (红温状态)
+/// 当启用状态并存时，完全阻止原方法执行，手动设置红温状态以保留寒冷状态
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.SetJalaed))]
+public static class ZombieSetJalaedCoexistPatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(Zombie __instance)
+    {
+        if (!ZombieStatusCoexist) return true; // 不启用时正常执行原方法
+        
+        try
+        {
+            if (__instance == null) return true;
+            
+            // 手动设置红温状态，不调用原方法（原方法会清除寒冷状态）
+            __instance.isJalaed = true;
+            
+            // 原方法还会设置 isEmbered = false，我们也需要做这个
+            // 但为了状态并存，我们不清除 isEmbered
+            
+            return false; // 阻止原方法执行
+        }
+        catch 
+        { 
+            return true; // 出错时执行原方法
+        }
+    }
+}
+
+/// <summary>
+/// 僵尸状态并存补丁 - Zombie.SetEmbered (余烬状态)
+/// 当启用状态并存时，完全阻止原方法执行，手动设置余烬状态以保留寒冷状态
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.SetEmbered))]
+public static class ZombieSetEmberedCoexistPatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(Zombie __instance)
+    {
+        if (!ZombieStatusCoexist) return true; // 不启用时正常执行原方法
+        
+        try
+        {
+            if (__instance == null) return true;
+            
+            // 手动设置余烬状态，不调用原方法（原方法会清除寒冷状态）
+            __instance.isEmbered = true;
+            
+            return false; // 阻止原方法执行
+        }
+        catch 
+        { 
+            return true; // 出错时执行原方法
+        }
+    }
+}
+
+#endregion
+
 // 注释掉 PotatoMine.Update patch，改用 PatchMgr.Update 中的实现
 // 原因：Il2Cpp 对象池在高频 Harmony patch 中会导致栈溢出
 /*
@@ -2278,6 +2559,7 @@ public static class PotatoMinePatch
         catch { }
     }
 }
+
 */
 
 [HarmonyPatch(typeof(Board), nameof(Board.SetEvePlants))]
@@ -2871,6 +3153,15 @@ public class PatchMgr : MonoBehaviour
     public static bool ZombieBulletReflectEnabled { get; set; } = false;
     public static float ZombieBulletReflectChance { get; set; } = 10.0f;
     public static bool UnlimitedCardSlots { get; set; } = false;
+    /// <summary>
+    /// 僵尸状态并存 - 允许红温与寒冰、蒜毒状态同时存在
+    /// </summary>
+    public static bool ZombieStatusCoexist { get; set; } = false;
+    
+    /// <summary>
+    /// 僵尸状态并存数据缓存 - 用于在Update中维护状态
+    /// </summary>
+    public static Dictionary<int, (bool hadCold, float coldTimer, float freezeTimer, int freezeLevel)> ZombieStatusCoexistData = new Dictionary<int, (bool, float, float, int)>();
 
     public void Update()
     {
@@ -3124,6 +3415,69 @@ public class PatchMgr : MonoBehaviour
                     catch (Exception e) { }
                 }
             }
+        }
+        
+        // 僵尸状态并存 - 在每帧维护红温与寒冷状态的并存
+        if (ZombieStatusCoexist)
+        {
+            try
+            {
+                foreach (var zombie in Board.Instance.zombieArray)
+                {
+                    if (zombie == null) continue;
+                    
+                    // 如果僵尸同时有红温状态和之前保存的寒冷状态，恢复寒冷状态
+                    int zombieId = zombie.GetInstanceID();
+                    if (zombie.isJalaed && ZombieStatusCoexistData.TryGetValue(zombieId, out var savedState))
+                    {
+                        // 如果寒冷/冻结状态被清除了，恢复它
+                        if (savedState.hadCold && zombie.coldTimer <= 0 && zombie.freezeTimer <= 0 && zombie.freezeLevel <= 0)
+                        {
+                            zombie.coldTimer = savedState.coldTimer;
+                            zombie.freezeTimer = savedState.freezeTimer;
+                            zombie.freezeLevel = savedState.freezeLevel;
+                        }
+                    }
+                    
+                    // 保存当前状态用于下一帧检查
+                    bool hasCold = zombie.coldTimer > 0 || zombie.freezeTimer > 0 || zombie.freezeLevel > 0;
+                    if (hasCold)
+                    {
+                        ZombieStatusCoexistData[zombieId] = (true, zombie.coldTimer, zombie.freezeTimer, zombie.freezeLevel);
+                    }
+                    else if (!zombie.isJalaed)
+                    {
+                        // 如果僵尸既没有红温也没有寒冷，清除缓存
+                        ZombieStatusCoexistData.Remove(zombieId);
+                    }
+                }
+                
+                // 清理已死亡僵尸的缓存
+                var deadZombieIds = ZombieStatusCoexistData.Keys.ToList();
+                foreach (var id in deadZombieIds)
+                {
+                    bool found = false;
+                    foreach (var zombie in Board.Instance.zombieArray)
+                    {
+                        if (zombie != null && zombie.GetInstanceID() == id)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found)
+                    {
+                        ZombieStatusCoexistData.Remove(id);
+                    }
+                }
+            }
+            catch { }
+        }
+        else
+        {
+            // 功能关闭时清空缓存
+            if (ZombieStatusCoexistData.Count > 0)
+                ZombieStatusCoexistData.Clear();
         }
     }
 

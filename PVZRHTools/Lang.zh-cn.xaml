@@ -31,6 +31,8 @@
     <s:String x:Key="Tab1.Page6_5.ZombieBulletReflect">僵尸概率反弹子弹</s:String>
     <s:String x:Key="Tab1.Page6_5.ZombieBulletReflect.Tooltip">启用后僵尸受到子弹攻击时有一定概率将子弹反弹回去</s:String>
     <s:String x:Key="Tab1.Page6_5.ZombieBulletReflectChance.Tooltip">僵尸反弹子弹的概率（0-100%）</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieStatusCoexist">僵尸状态并存</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieStatusCoexist.Tooltip">启用后僵尸的红温（火焰）状态可与寒冰、蒜毒状态同时存在，不再互斥</s:String>
     <s:String x:Key="Tab1.Page7.Header">其他特性</s:String>
     <s:String x:Key="Tab1.Description">此修改器完全免费且已在github开源。若有付费/要求三连+关注/私信发链接的情况，说明你被骗了，请注意隐私和财产安全！</s:String>
     <s:String x:Key="Tab1.Page1.DevMode">开发者模式</s:String>

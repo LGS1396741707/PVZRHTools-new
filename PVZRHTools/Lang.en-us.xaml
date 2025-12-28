@@ -31,6 +31,8 @@
     <s:String x:Key="Tab1.Page6_5.ZombieBulletReflect">Zombie Bullet Reflect</s:String>
     <s:String x:Key="Tab1.Page6_5.ZombieBulletReflect.Tooltip">When enabled, zombies have a chance to reflect bullets back</s:String>
     <s:String x:Key="Tab1.Page6_5.ZombieBulletReflectChance.Tooltip">Chance for zombies to reflect bullets (0-100%)</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieStatusCoexist">Zombie Status Coexist</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieStatusCoexist.Tooltip">When enabled, zombie's warm (fire) status can coexist with cold and poison status instead of being mutually exclusive</s:String>
     <s:String x:Key="Tab1.Page7.Header">OtherProperties</s:String>
     <s:String x:Key="Tab1.Description">The modifier is completely free and is open sourced on Github. All the paid versions are pirated. All the English texts here are translated by myself instead of translating by machine and I'm sorry that my English is extremely poor.</s:String>
     <s:String x:Key="Tab1.Page1.DevMode">DevMode</s:String>

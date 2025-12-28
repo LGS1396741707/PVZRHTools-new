@@ -30,6 +30,8 @@
     <s:String x:Key="Tab1.Page6_5.ZombieBulletReflect">Отражение пуль зомби</s:String>
     <s:String x:Key="Tab1.Page6_5.ZombieBulletReflect.Tooltip">При включении зомби имеют шанс отразить пули обратно</s:String>
     <s:String x:Key="Tab1.Page6_5.ZombieBulletReflectChance.Tooltip">Шанс отражения пуль зомби (0-100%)</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieStatusCoexist">Сосуществование статусов зомби</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieStatusCoexist.Tooltip">При включении статус тепла (огня) зомби может сосуществовать со статусами холода и яда, а не быть взаимоисключающим</s:String>
     <s:String x:Key="Tab1.Page7.Header">Другие свойства</s:String>
     <s:String x:Key="Tab1.Description">Модификатор полностью бесплатен и имеет открытый исходный код на Github. Все платные версии являются пиратскими. Все английские тексты здесь переведены мной лично, а не машинным переводом, и я извиняюсь за то, что мой английский очень плох.</s:String>
     <s:String x:Key="Tab1.Page1.DevMode">Разработчик</s:String>

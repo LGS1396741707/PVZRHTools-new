@@ -72,6 +72,10 @@ public struct BasicProperties : ISyncData
     public bool? ZombieBulletReflectEnabled { get; set; }
     public float? ZombieBulletReflectChance { get; set; }
     public bool? UnlimitedCardSlots { get; set; }
+    /// <summary>
+    /// 僵尸状态并存 - 允许红温与寒冰、蒜毒状态同时存在
+    /// </summary>
+    public bool? ZombieStatusCoexist { get; set; }
 }
 
 [Serializable]
