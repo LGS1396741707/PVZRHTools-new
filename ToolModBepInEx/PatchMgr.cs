@@ -335,6 +335,9 @@ public static class UnlimitedCardLevelLimPatch
 [HarmonyPatch(typeof(CardUI), nameof(CardUI.OnMouseDown))]
 public static class UnlimitedCardOnMouseDownPatch
 {
+    // 记录复制出来的卡片，用于退出选卡时清除
+    public static List<GameObject> CopiedCards = new List<GameObject>();
+
     [HarmonyPostfix]
     public static void Postfix(CardUI __instance)
     {
@@ -359,8 +362,62 @@ public static class UnlimitedCardOnMouseDownPatch
                 newCard.CD = newCard.fullCD;
                 newCard.isSelected = false; // 新卡片未被选中
             }
+
+            // 记录复制的卡片
+            CopiedCards.Add(go);
         }
         catch { }
+    }
+
+    /// <summary>
+    /// 清除未被选中的复制卡片（保留已选择的卡片）
+    /// </summary>
+    public static void ClearUnselectedCopiedCards()
+    {
+        try
+        {
+            var toRemove = new List<GameObject>();
+            foreach (var card in CopiedCards)
+            {
+                if (card != null)
+                {
+                    var cardUI = card.GetComponent<CardUI>();
+                    // 只清除未被选中的卡片
+                    if (cardUI == null || !cardUI.isSelected)
+                    {
+                        Object.Destroy(card);
+                        toRemove.Add(card);
+                    }
+                }
+                else
+                {
+                    toRemove.Add(card);
+                }
+            }
+            // 从列表中移除已销毁的卡片
+            foreach (var card in toRemove)
+            {
+                CopiedCards.Remove(card);
+            }
+        }
+        catch { }
+    }
+}
+
+/// <summary>
+/// 卡片无限制补丁 - InitBoard.RemoveUI
+/// 在退出选卡界面时清除未被选中的复制卡片
+/// </summary>
+[HarmonyPatch(typeof(InitBoard), nameof(InitBoard.RemoveUI))]
+public static class UnlimitedCardRemoveUIPatch
+{
+    [HarmonyPrefix]
+    public static void Prefix()
+    {
+        if (UnlimitedCardSlots)
+        {
+            UnlimitedCardOnMouseDownPatch.ClearUnselectedCopiedCards();
+        }
     }
 }
 
@@ -374,7 +431,8 @@ public static class UnlimitedCardBoardStartPatch
     [HarmonyPostfix]
     public static void Postfix()
     {
-        // 预留，可用于重置状态
+        // 清除复制的卡片列表
+        UnlimitedCardOnMouseDownPatch.CopiedCards.Clear();
     }
 }
 
