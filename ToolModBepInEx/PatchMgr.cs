@@ -402,6 +402,25 @@ public static class UnlimitedCardOnMouseDownPatch
         }
         catch { }
     }
+
+    /// <summary>
+    /// 清除所有复制的卡片（关闭功能时调用）
+    /// </summary>
+    public static void ClearAllCopiedCards()
+    {
+        try
+        {
+            foreach (var card in CopiedCards)
+            {
+                if (card != null)
+                {
+                    Object.Destroy(card);
+                }
+            }
+            CopiedCards.Clear();
+        }
+        catch { }
+    }
 }
 
 /// <summary>
