@@ -76,6 +76,16 @@ public struct BasicProperties : ISyncData
     /// 僵尸状态并存 - 允许红温与寒冰、蒜毒状态同时存在
     /// </summary>
     public bool? ZombieStatusCoexist { get; set; }
+    
+    /// <summary>
+    /// 鱼丸坚不可摧 - 鱼丸受到的伤害最多为200
+    /// </summary>
+    public bool? MNEntryIndestructible { get; set; }
+    
+    /// <summary>
+    /// 鱼丸高级后勤 - 鱼丸恢复血量时恢复双倍血量, 阳光磁力菇冷却时间大幅减少
+    /// </summary>
+    public bool? MNEntryAdvancedLogistics { get; set; }
 }
 
 [Serializable]

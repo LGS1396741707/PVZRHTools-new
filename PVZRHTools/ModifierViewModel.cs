@@ -1360,6 +1360,16 @@ public partial class ModifierViewModel : ObservableObject
         App.DataSync.Value.SendData(new BasicProperties { ZombieStatusCoexist = value });
     }
 
+    partial void OnMNEntryIndestructibleChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { MNEntryIndestructible = value });
+    }
+
+    partial void OnMNEntryAdvancedLogisticsChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { MNEntryAdvancedLogistics = value });
+    }
+
     partial void OnPlantingNoCDChanged(bool value)
     {
         App.DataSync.Value.SendData(new BasicProperties { PlantingNoCD = value });
@@ -1748,6 +1758,10 @@ public partial class ModifierViewModel : ObservableObject
     [ObservableProperty] public partial bool UnlimitedCardSlots { get; set; }
 
     [ObservableProperty] public partial bool ZombieStatusCoexist { get; set; }
+
+    [ObservableProperty] public partial bool MNEntryIndestructible { get; set; }
+
+    [ObservableProperty] public partial bool MNEntryAdvancedLogistics { get; set; }
 
     [ObservableProperty] public partial bool PlantingNoCD { get; set; }
 

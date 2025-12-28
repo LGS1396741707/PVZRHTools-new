@@ -3163,6 +3163,16 @@ public class PatchMgr : MonoBehaviour
     /// </summary>
     public static Dictionary<int, (bool hadCold, float coldTimer, float freezeTimer, int freezeLevel)> ZombieStatusCoexistData = new Dictionary<int, (bool, float, float, int)>();
 
+    /// <summary>
+    /// 鱼丸坚不可摧 - 鱼丸受到的伤害最多为200
+    /// </summary>
+    public static bool MNEntryIndestructible { get; set; } = false;
+    
+    /// <summary>
+    /// 鱼丸高级后勤 - 鱼丸恢复血量时恢复双倍血量, 阳光磁力菇冷却时间大幅减少
+    /// </summary>
+    public static bool MNEntryAdvancedLogistics { get; set; } = false;
+
     public void Update()
     {
         try
@@ -3614,5 +3624,181 @@ public class PatchMgr : MonoBehaviour
             GameAPP.gameAPP.GetOrAddComponent<TravelMgr>().ultimateUpgrades![i] = GetIntArray(InGameUltiBuffs)[i];
         for (var i = 0; i < GameAPP.gameAPP.GetOrAddComponent<TravelMgr>().debuff.Count; i++)
             GameAPP.gameAPP.GetOrAddComponent<TravelMgr>().debuff![i] = InGameDebuffs[i];
+    }
+}
+
+/// <summary>
+/// 鱼丸坚不可摧 - 鱼丸受到的伤害最多为200
+/// 注意：此Patch已被SuperMachineNutTakeDamageGameBuffPatch替代，保留此类仅作为占位
+/// </summary>
+// SuperMachineNutTakeDamagePatch 已移除，功能合并到 SuperMachineNutTakeDamageGameBuffPatch
+
+// PlantRecoverMNEntryPatch 已移除，功能合并到 PlantRecoverGameBuffPatch
+
+// SunMagnetShroomMNEntryPatch 已移除，功能合并到 SunMagnetShroomGameBuffPatch
+
+/// <summary>
+/// MNEntry词条注册 - 将词条注册到游戏的旅行词条系统中
+/// 只有当修改器中对应开关开启时，才会注册词条到游戏中
+/// </summary>
+[HarmonyPatch(typeof(TravelMgr))]
+public static class MNEntryTravelMgrPatch
+{
+    /// <summary>
+    /// 词条1(坚不可摧)在TravelMgr.advancedBuffs中的ID，-1表示未注册
+    /// </summary>
+    public static int TravelId1 = -1;
+
+    /// <summary>
+    /// 词条2(高级后勤)在TravelMgr.advancedBuffs中的ID，-1表示未注册
+    /// </summary>
+    public static int TravelId2 = -1;
+
+    /// <summary>
+    /// 词条文本
+    /// </summary>
+    private const string BuffText1 = "坚不可摧: 鱼丸受到的伤害最多为200";
+    private const string BuffText2 = "高级后勤: 鱼丸恢复血量时恢复双倍血量, 阳光磁力菇冷却时间大幅减少";
+
+    /// <summary>
+    /// TravelMgr.Awake 后置补丁
+    /// 在TravelMgr初始化时根据修改器开关状态注册自定义buff词条
+    /// </summary>
+    [HarmonyPostfix]
+    [HarmonyPatch("Awake")]
+    public static void PostAwake(TravelMgr __instance)
+    {
+        try
+        {
+            // 重置词条ID
+            TravelId1 = -1;
+            TravelId2 = -1;
+
+            int registeredCount = 0;
+            int baseId = TravelMgr.advancedBuffs.Count;
+
+            // 只有当修改器开关开启时才注册词条1
+            if (PatchMgr.MNEntryIndestructible)
+            {
+                TravelId1 = baseId + registeredCount;
+                TravelMgr.advancedBuffs[TravelId1] = BuffText1;
+                registeredCount++;
+                MLogger.LogInfo($"MNEntry词条[坚不可摧]注册成功，ID: {TravelId1}");
+            }
+
+            // 只有当修改器开关开启时才注册词条2
+            if (PatchMgr.MNEntryAdvancedLogistics)
+            {
+                TravelId2 = baseId + registeredCount;
+                TravelMgr.advancedBuffs[TravelId2] = BuffText2;
+                registeredCount++;
+                MLogger.LogInfo($"MNEntry词条[高级后勤]注册成功，ID: {TravelId2}");
+            }
+
+            // 如果有词条需要注册，扩展数组
+            if (registeredCount > 0)
+            {
+                bool[] newUpgrades = new bool[__instance.advancedUpgrades.Count + registeredCount];
+                Array.Copy(__instance.advancedUpgrades.ToArray(), newUpgrades, __instance.advancedUpgrades.Count);
+                __instance.advancedUpgrades = newUpgrades;
+            }
+        }
+        catch (Exception ex)
+        {
+            MLogger.LogError($"MNEntry词条注册失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// GetPlantTypeByAdvBuff 后置补丁
+    /// 返回词条对应的植物类型，用于在选词条时展示植物图标
+    /// </summary>
+    [HarmonyPatch("GetPlantTypeByAdvBuff")]
+    [HarmonyPostfix]
+    public static void PostGetPlantTypeByAdvBuff(ref int index, ref PlantType __result)
+    {
+        // 如果是我们注册的词条，返回鱼丸的植物类型
+        if ((TravelId1 >= 0 && index == TravelId1) || (TravelId2 >= 0 && index == TravelId2))
+        {
+            __result = (PlantType)1151; // SuperMachineNut = 1151
+        }
+    }
+}
+
+/// <summary>
+/// MNEntry词条效果 - 通过检查游戏内词条状态来触发效果
+/// </summary>
+[HarmonyPatch(typeof(SuperMachineNut), nameof(SuperMachineNut.TakeDamage))]
+public static class SuperMachineNutTakeDamageGameBuffPatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(ref int damage)
+    {
+        // 检查修改器开关
+        if (PatchMgr.MNEntryIndestructible)
+        {
+            if (damage > 200) damage = 200;
+            return true;
+        }
+
+        // 检查游戏内词条是否激活
+        if (MNEntryTravelMgrPatch.TravelId1 >= 0 && Lawnf.TravelAdvanced(MNEntryTravelMgrPatch.TravelId1))
+        {
+            if (damage > 200) damage = 200;
+        }
+        return true;
+    }
+}
+
+/// <summary>
+/// MNEntry词条效果 - 鱼丸双倍恢复（游戏内词条版本）
+/// </summary>
+[HarmonyPatch(typeof(Plant), nameof(Plant.Recover))]
+public static class PlantRecoverGameBuffPatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(ref float health, Plant __instance)
+    {
+        if (__instance.thePlantType != (PlantType)1151) return true;
+
+        // 检查修改器开关
+        if (PatchMgr.MNEntryAdvancedLogistics)
+        {
+            health *= 2f;
+            return true;
+        }
+
+        // 检查游戏内词条是否激活
+        if (MNEntryTravelMgrPatch.TravelId2 >= 0 && Lawnf.TravelAdvanced(MNEntryTravelMgrPatch.TravelId2))
+        {
+            health *= 2f;
+        }
+        return true;
+    }
+}
+
+/// <summary>
+/// MNEntry词条效果 - 阳光磁力菇CD减少（游戏内词条版本）
+/// </summary>
+[HarmonyPatch(typeof(SunMagnetShroom), nameof(SunMagnetShroom.AttributeEvent))]
+public static class SunMagnetShroomGameBuffPatch
+{
+    [HarmonyPostfix]
+    public static void Postfix(SunMagnetShroom __instance)
+    {
+        // 检查修改器开关
+        if (PatchMgr.MNEntryAdvancedLogistics)
+        {
+            if (__instance.attributeCountdown > 5f)
+                __instance.attributeCountdown = 4.5f;
+            return;
+        }
+
+        // 检查游戏内词条是否激活
+        if (MNEntryTravelMgrPatch.TravelId2 >= 0 && Lawnf.TravelAdvanced(MNEntryTravelMgrPatch.TravelId2))
+        {
+            if (__instance.attributeCountdown > 5f)
+                __instance.attributeCountdown = 4.5f;
+        }
     }
 }
