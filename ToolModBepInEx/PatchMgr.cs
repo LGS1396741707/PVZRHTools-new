@@ -328,67 +328,45 @@ public static class UnlimitedCardLevelLimPatch
 }
 
 /// <summary>
-/// 卡片无限制补丁 - CardUI.Start Prefix
-/// 参考GoldImitater.BepInEx的实现方式，在CardUI.Start的Prefix中复制卡片
-/// 这样复制的卡片会绑过选卡限制
+/// 卡片无限制补丁 - CardUI.OnMouseDown
+/// 当点击选取卡片时，复制一张新卡片
+/// 参考GoldImitater.BepInEx的实现方式
 /// </summary>
-[HarmonyPatch(typeof(CardUI), nameof(CardUI.Start))]
-public static class UnlimitedCardStartPatch
+[HarmonyPatch(typeof(CardUI), nameof(CardUI.OnMouseDown))]
+public static class UnlimitedCardOnMouseDownPatch
 {
-    // 记录每种植物类型已复制的次数，防止无限复制
-    private static Dictionary<int, int> _cardCopyCount = new Dictionary<int, int>();
-    // 每种卡片最多复制的次数（额外复制14张，加上原来的1张共15张）
-    private const int MaxCopyCount = 14;
-
-    [HarmonyPrefix]
-    public static void Prefix(CardUI __instance)
+    [HarmonyPostfix]
+    public static void Postfix(CardUI __instance)
     {
         if (!UnlimitedCardSlots) return;
 
         try
         {
-            // 获取植物类型ID
-            int plantTypeId = (int)__instance.thePlantType;
+            // 只在选卡界面（卡片被选中时）复制
+            if (!__instance.isSelected) return;
             
-            // 检查是否已经复制过足够次数
-            if (!_cardCopyCount.TryGetValue(plantTypeId, out int count))
-            {
-                count = 0;
-            }
+            // 检查父对象是否存在
+            if (__instance.transform.parent == null) return;
 
-            if (count < MaxCopyCount)
+            // 复制卡片对象
+            GameObject go = GameObject.Instantiate(__instance.gameObject, __instance.transform.parent);
+            go.transform.position = __instance.transform.position;
+            
+            // 设置新卡片的CD
+            var newCard = go.GetComponent<CardUI>();
+            if (newCard != null)
             {
-                // 复制卡片对象
-                GameObject go = GameObject.Instantiate(__instance.gameObject, __instance.transform.parent);
-                go.transform.position = __instance.transform.position;
-                
-                // 设置CD
-                __instance.CD = __instance.fullCD;
-                var newCard = go.GetComponent<CardUI>();
-                if (newCard != null)
-                {
-                    newCard.CD = newCard.fullCD;
-                }
-
-                // 增加复制计数
-                _cardCopyCount[plantTypeId] = count + 1;
+                newCard.CD = newCard.fullCD;
+                newCard.isSelected = false; // 新卡片未被选中
             }
         }
         catch { }
-    }
-
-    /// <summary>
-    /// 重置复制计数（在Board.Start时调用）
-    /// </summary>
-    public static void ResetCopyCount()
-    {
-        _cardCopyCount.Clear();
     }
 }
 
 /// <summary>
 /// 卡片无限制补丁 - Board.Start
-/// 在Board.Start时重置卡片复制计数
+/// 在Board.Start时重置状态
 /// </summary>
 [HarmonyPatch(typeof(Board), nameof(Board.Start))]
 public static class UnlimitedCardBoardStartPatch
@@ -396,7 +374,7 @@ public static class UnlimitedCardBoardStartPatch
     [HarmonyPostfix]
     public static void Postfix()
     {
-        UnlimitedCardStartPatch.ResetCopyCount();
+        // 预留，可用于重置状态
     }
 }
 
