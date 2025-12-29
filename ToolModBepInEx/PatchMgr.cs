@@ -3197,11 +3197,21 @@ public class PatchMgr : MonoBehaviour
             if (!TimeStop && TimeSlow) Time.timeScale = 0.2f;
             if (InGameBtnPatch.BottomEnabled || (TimeStop && !TimeSlow)) Time.timeScale = 0;
 
+            // SlowTrigger UI更新 - 独立try块，不影响其他功能
             try
             {
-                var slow = GameObject.Find("SlowTrigger").transform;
-                slow.GetChild(0).gameObject.GetComponent<TextMeshProUGUI>().text = $"时停(x{Time.timeScale})";
-                slow.GetChild(1).gameObject.GetComponent<TextMeshProUGUI>().text = $"时停(x{Time.timeScale})";
+                var slow = GameObject.Find("SlowTrigger")?.transform;
+                if (slow != null)
+                {
+                    slow.GetChild(0).gameObject.GetComponent<TextMeshProUGUI>().text = $"时停(x{Time.timeScale})";
+                    slow.GetChild(1).gameObject.GetComponent<TextMeshProUGUI>().text = $"时停(x{Time.timeScale})";
+                }
+            }
+            catch { }
+
+            // 卡组置顶切换
+            try
+            {
                 if (Input.GetKeyDown(Core.KeyTopMostCardBank.Value.Value))
                 {
                     if (GameAPP.canvas.GetComponent<Canvas>().sortingLayerName == "Default")
@@ -3209,27 +3219,43 @@ public class PatchMgr : MonoBehaviour
                     else
                         GameAPP.canvas.GetComponent<Canvas>().sortingLayerName = "Default";
                 }
+            }
+            catch { }
 
-                if (Input.GetKeyDown(Core.KeyAlmanacCreatePlant.Value.Value) && AlmanacSeedType != -1)
-                    CreatePlant.Instance.SetPlant(Mouse.Instance.theMouseColumn, Mouse.Instance.theMouseRow,
-                        (PlantType)AlmanacSeedType);
-                if (Input.GetKeyDown(Core.KeyAlmanacZombieMindCtrl.Value.Value))
-                    Core.AlmanacZombieMindCtrl.Value.Value = !Core.AlmanacZombieMindCtrl.Value.Value;
-                if (Input.GetKeyDown(Core.KeyAlmanacCreateZombie.Value.Value) &&
-                    AlmanacZombieType is not ZombieType.Nothing)
+            // 图鉴放置功能 - 独立try块，确保在任何关卡都能正常工作
+            try
+            {
+                if (Board.Instance != null && Mouse.Instance != null)
                 {
-                    if (Core.AlmanacZombieMindCtrl.Value.Value)
-                        CreateZombie.Instance.SetZombieWithMindControl(Mouse.Instance.theMouseRow, AlmanacZombieType,
-                            Mouse.Instance.mouseX);
-                    else
-                        CreateZombie.Instance.SetZombie(Mouse.Instance.theMouseRow, AlmanacZombieType,
-                            Mouse.Instance.mouseX);
-                }
+                    // 放置植物
+                    if (Input.GetKeyDown(Core.KeyAlmanacCreatePlant.Value.Value) && AlmanacSeedType != -1)
+                    {
+                        if (CreatePlant.Instance != null)
+                            CreatePlant.Instance.SetPlant(Mouse.Instance.theMouseColumn, Mouse.Instance.theMouseRow,
+                                (PlantType)AlmanacSeedType);
+                    }
 
-                // 植物罐子 - 使用 ScaryPot_plant 类型
-                if (Input.GetKeyDown(Core.KeyAlmanacCreatePlantVase.Value.Value) && AlmanacSeedType != -1)
-                {
-                    try
+                    // 切换魅惑僵尸模式
+                    if (Input.GetKeyDown(Core.KeyAlmanacZombieMindCtrl.Value.Value))
+                        Core.AlmanacZombieMindCtrl.Value.Value = !Core.AlmanacZombieMindCtrl.Value.Value;
+
+                    // 放置僵尸
+                    if (Input.GetKeyDown(Core.KeyAlmanacCreateZombie.Value.Value) &&
+                        AlmanacZombieType is not ZombieType.Nothing)
+                    {
+                        if (CreateZombie.Instance != null)
+                        {
+                            if (Core.AlmanacZombieMindCtrl.Value.Value)
+                                CreateZombie.Instance.SetZombieWithMindControl(Mouse.Instance.theMouseRow, AlmanacZombieType,
+                                    Mouse.Instance.mouseX);
+                            else
+                                CreateZombie.Instance.SetZombie(Mouse.Instance.theMouseRow, AlmanacZombieType,
+                                    Mouse.Instance.mouseX);
+                        }
+                    }
+
+                    // 植物罐子 - 使用 ScaryPot_plant 类型
+                    if (Input.GetKeyDown(Core.KeyAlmanacCreatePlantVase.Value.Value) && AlmanacSeedType != -1)
                     {
                         var gridItem = GridItem.SetGridItem(Mouse.Instance.theMouseColumn, Mouse.Instance.theMouseRow,
                             GridItemType.ScaryPot_plant);
@@ -3242,14 +3268,10 @@ public class PatchMgr : MonoBehaviour
                             }
                         }
                     }
-                    catch { }
-                }
 
-                // 僵尸罐子 - 使用 ScaryPot_zombie 类型
-                if (Input.GetKeyDown(Core.KeyAlmanacCreateZombieVase.Value.Value) &&
-                    AlmanacZombieType is not ZombieType.Nothing)
-                {
-                    try
+                    // 僵尸罐子 - 使用 ScaryPot_zombie 类型
+                    if (Input.GetKeyDown(Core.KeyAlmanacCreateZombieVase.Value.Value) &&
+                        AlmanacZombieType is not ZombieType.Nothing)
                     {
                         var gridItem = GridItem.SetGridItem(Mouse.Instance.theMouseColumn, Mouse.Instance.theMouseRow,
                             GridItemType.ScaryPot_zombie);
@@ -3262,18 +3284,29 @@ public class PatchMgr : MonoBehaviour
                             }
                         }
                     }
-                    catch { }
                 }
+            }
+            catch { }
 
+            // 随机卡片切换
+            try
+            {
                 if (Input.GetKeyDown(Core.KeyRandomCard.Value.Value))
                     RandomCard = !RandomCard;
-                var t = Board.Instance.boardTag;
-                t.enableTravelPlant = t.enableTravelPlant || UnlockAllFusions;
-                Board.Instance.boardTag = t;
             }
-            catch (NullReferenceException)
+            catch { }
+
+            // 解锁融合植物
+            try
             {
+                if (Board.Instance != null)
+                {
+                    var t = Board.Instance.boardTag;
+                    t.enableTravelPlant = t.enableTravelPlant || UnlockAllFusions;
+                    Board.Instance.boardTag = t;
+                }
             }
+            catch { }
         }
 
         if (!InGame()) return;
