@@ -22,6 +22,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Interop;
 using PVZRHTools.Animations;
+using PVZRHTools.Themes;
 
 /// <summary>
 ///     Interaction logic for MainWindow.xaml
@@ -89,6 +90,21 @@ namespace PVZRHTools
             
             // 为所有按钮添加交互动画
             ApplyAnimationsToControls(this);
+            
+            // 恢复主题设置
+            if (ViewModel.IsDarkTheme)
+            {
+                ThemeManager.Instance.SetTheme(this, true, false);
+            }
+        }
+        
+        /// <summary>
+        /// 切换深色/浅色主题
+        /// </summary>
+        public void ToggleTheme()
+        {
+            ThemeManager.Instance.ToggleTheme(this);
+            ViewModel.IsDarkTheme = ThemeManager.Instance.IsDarkTheme;
         }
         
         /// <summary>
@@ -245,6 +261,14 @@ namespace PVZRHTools
         private void LockWheatPlant_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
 
+        }
+        
+        private void DarkThemeToggle_Changed(object sender, RoutedEventArgs e)
+        {
+            if (App.inited)
+            {
+                ThemeManager.Instance.SetTheme(this, ViewModel.IsDarkTheme, true);
+            }
         }
     }
 }
