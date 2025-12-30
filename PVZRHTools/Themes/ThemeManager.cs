@@ -157,9 +157,10 @@ namespace PVZRHTools.Themes
                 if (border.Background is SolidColorBrush bgBrush)
                 {
                     var color = bgBrush.Color;
-                    // 白色/浅色背景 或 深色背景 都需要切换
-                    bool isLight = color.R > 200 && color.G > 200 && color.B > 200;
-                    bool isDarkBg = color.R < 100 && color.G < 100 && color.B < 100 && color.A > 100;
+                    // 白色/浅色背景（包括半透明）
+                    bool isLight = color.R > 180 && color.G > 180 && color.B > 180 && color.A > 50;
+                    // 深色背景
+                    bool isDarkBg = color.R < 100 && color.G < 100 && color.B < 100 && color.A > 50;
                     if (isLight || isDarkBg)
                     {
                         AnimateBrushProperty(border, Border.BackgroundProperty, cardBg, duration, easing);
@@ -184,11 +185,31 @@ namespace PVZRHTools.Themes
                 tabItem.SetValue(TextElement.ForegroundProperty, new SolidColorBrush(fg));
             }
 
-            // ContentPresenter - 用于 TabItem Header 等
+            // ContentPresenter - 只对 TabItem 内部的应用主题色
             if (element is ContentPresenter presenter)
             {
-                // 设置 TextElement.Foreground 附加属性
-                presenter.SetValue(TextElement.ForegroundProperty, new SolidColorBrush(fg));
+                // 检查父控件是否是 TabItem
+                var presenterParent = VisualTreeHelper.GetParent(presenter);
+                bool isInTabItem = false;
+                while (presenterParent != null)
+                {
+                    if (presenterParent is TabItem)
+                    {
+                        isInTabItem = true;
+                        break;
+                    }
+                    if (presenterParent is Label parentLabel && IsAccentColor(parentLabel.Foreground))
+                    {
+                        // 如果在粉色 Label 内，不改变颜色
+                        break;
+                    }
+                    presenterParent = VisualTreeHelper.GetParent(presenterParent);
+                }
+                
+                if (isInTabItem)
+                {
+                    presenter.SetValue(TextElement.ForegroundProperty, new SolidColorBrush(fg));
+                }
             }
 
             // Label 前景色
@@ -206,7 +227,7 @@ namespace PVZRHTools.Themes
                 }
             }
 
-            // TextBlock 前景色 - 强制应用（除了粉色）
+            // TextBlock 前景色 - 强制应用（除了粉色和淡蓝色）
             if (element is TextBlock textBlock)
             {
                 if (textBlock.Foreground is SolidColorBrush fgBrush)
@@ -214,7 +235,9 @@ namespace PVZRHTools.Themes
                     var color = fgBrush.Color;
                     // 粉色系保持不变
                     bool isPink = color.R > 200 && color.G < 150 && color.B > 150;
-                    if (!isPink)
+                    // 淡蓝色保持不变 (#80C8FF 等蓝色系)
+                    bool isBlue = color.B > 200 && color.G > 150 && color.R < 150;
+                    if (!isPink && !isBlue)
                     {
                         AnimateBrushProperty(textBlock, TextBlock.ForegroundProperty, fg, duration, easing);
                     }
@@ -347,6 +370,62 @@ namespace PVZRHTools.Themes
                     AnimateBrushProperty(headered, Control.ForegroundProperty, fg, duration, easing);
                 }
             }
+
+            // Button - 强制应用前景色和背景色
+            if (element is Button button)
+            {
+                // 前景色
+                AnimateBrushProperty(button, Control.ForegroundProperty, fg, duration, easing);
+                // 背景色
+                if (IsThemeableBackground(button.Background))
+                {
+                    AnimateBrushProperty(button, Control.BackgroundProperty, cardBg, duration, easing);
+                }
+            }
+
+            // ToggleButton (包括 CheckBox 的内部按钮)
+            if (element is ToggleButton toggleButton && !(element is CheckBox) && !(element is RadioButton))
+            {
+                AnimateBrushProperty(toggleButton, Control.ForegroundProperty, fg, duration, easing);
+                if (IsThemeableBackground(toggleButton.Background))
+                {
+                    AnimateBrushProperty(toggleButton, Control.BackgroundProperty, cardBg, duration, easing);
+                }
+            }
+
+            // RepeatButton
+            if (element is RepeatButton repeatButton)
+            {
+                AnimateBrushProperty(repeatButton, Control.ForegroundProperty, fg, duration, easing);
+            }
+
+            // 通用 Control 处理 - 捕获其他未处理的控件
+            if (element is Control control && 
+                !(element is Button) && 
+                !(element is CheckBox) && 
+                !(element is RadioButton) && 
+                !(element is TabItem) && 
+                !(element is TabControl) &&
+                !(element is Expander) &&
+                !(element is Label) &&
+                !(element is TextBox) &&
+                !(element is ComboBox) &&
+                !(element is ListBox) &&
+                !(element is DataGrid) &&
+                !(element is ScrollViewer) &&
+                !(element is GroupBox))
+            {
+                // 前景色
+                if (IsThemeableForeground(control.Foreground))
+                {
+                    AnimateBrushProperty(control, Control.ForegroundProperty, fg, duration, easing);
+                }
+                // 背景色
+                if (IsThemeableBackground(control.Background))
+                {
+                    AnimateBrushProperty(control, Control.BackgroundProperty, cardBg, duration, easing);
+                }
+            }
         }
 
         /// <summary>
@@ -357,11 +436,11 @@ namespace PVZRHTools.Themes
             if (brush is SolidColorBrush solidBrush)
             {
                 var color = solidBrush.Color;
-                // 白色/浅色背景
-                if (color.R > 200 && color.G > 200 && color.B > 200)
+                // 白色/浅色背景（包括半透明）
+                if (color.R > 180 && color.G > 180 && color.B > 180 && color.A > 50)
                     return true;
                 // 深色主题背景色
-                if (color.R < 80 && color.G < 80 && color.B < 80)
+                if (color.R < 100 && color.G < 100 && color.B < 100 && color.A > 50)
                     return true;
             }
             return false;
@@ -428,6 +507,40 @@ namespace PVZRHTools.Themes
             var app = Application.Current;
             if (app == null) return;
 
+            // 切换 HandyControl 皮肤
+            try
+            {
+                // 查找并替换 HandyControl 的 SkinDefault.xaml
+                var skinUri = isDark
+                    ? new Uri("pack://application:,,,/HandyControl;component/Themes/SkinDark.xaml")
+                    : new Uri("pack://application:,,,/HandyControl;component/Themes/SkinDefault.xaml");
+
+                // 查找现有的 HandyControl 皮肤资源
+                ResourceDictionary? existingSkin = null;
+                int skinIndex = -1;
+                for (int i = 0; i < app.Resources.MergedDictionaries.Count; i++)
+                {
+                    var dict = app.Resources.MergedDictionaries[i];
+                    if (dict.Source != null && dict.Source.ToString().Contains("HandyControl") && 
+                        (dict.Source.ToString().Contains("SkinDefault") || dict.Source.ToString().Contains("SkinDark")))
+                    {
+                        existingSkin = dict;
+                        skinIndex = i;
+                        break;
+                    }
+                }
+
+                if (skinIndex >= 0)
+                {
+                    // 替换皮肤
+                    app.Resources.MergedDictionaries[skinIndex] = new ResourceDictionary { Source = skinUri };
+                }
+            }
+            catch
+            {
+                // 如果 HandyControl 深色皮肤不存在，忽略错误
+            }
+
             // 更新或添加主题资源
             var themeDict = new ResourceDictionary();
             
@@ -438,6 +551,13 @@ namespace PVZRHTools.Themes
                 themeDict["ThemeSecondaryForeground"] = new SolidColorBrush(DarkTheme.SecondaryForeground);
                 themeDict["ThemeAccent"] = new SolidColorBrush(DarkTheme.Accent);
                 themeDict["ThemeBorder"] = new SolidColorBrush(DarkTheme.Border);
+                
+                // HandyControl 常用的资源键
+                themeDict["PrimaryTextBrush"] = new SolidColorBrush(DarkTheme.Foreground);
+                themeDict["SecondaryTextBrush"] = new SolidColorBrush(DarkTheme.SecondaryForeground);
+                themeDict["RegionBrush"] = new SolidColorBrush(DarkTheme.CardBackground);
+                themeDict["DefaultBrush"] = new SolidColorBrush(DarkTheme.CardBackground);
+                themeDict["BorderBrush"] = new SolidColorBrush(DarkTheme.Border);
             }
             else
             {
@@ -446,6 +566,13 @@ namespace PVZRHTools.Themes
                 themeDict["ThemeSecondaryForeground"] = new SolidColorBrush(LightTheme.SecondaryForeground);
                 themeDict["ThemeAccent"] = new SolidColorBrush(LightTheme.Accent);
                 themeDict["ThemeBorder"] = new SolidColorBrush(LightTheme.Border);
+                
+                // HandyControl 常用的资源键
+                themeDict["PrimaryTextBrush"] = new SolidColorBrush(LightTheme.Foreground);
+                themeDict["SecondaryTextBrush"] = new SolidColorBrush(LightTheme.SecondaryForeground);
+                themeDict["RegionBrush"] = new SolidColorBrush(LightTheme.CardBackground);
+                themeDict["DefaultBrush"] = new SolidColorBrush(LightTheme.CardBackground);
+                themeDict["BorderBrush"] = new SolidColorBrush(LightTheme.Border);
             }
 
             // 查找并替换主题资源字典
