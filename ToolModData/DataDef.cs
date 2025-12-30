@@ -91,6 +91,11 @@ public struct BasicProperties : ISyncData
     /// 击杀升级 - 植物击杀僵尸时自动升级
     /// </summary>
     public bool? KillUpgrade { get; set; }
+
+    /// <summary>
+    /// 僵尸免疫一切负面效果 - 免疫负面buff、击退、吞噬、魅惑等
+    /// </summary>
+    public bool? ZombieImmuneAllDebuffs { get; set; }
 }
 
 [Serializable]

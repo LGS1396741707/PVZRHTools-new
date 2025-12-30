@@ -3239,6 +3239,262 @@ public static class ZombieDieKillUpgradePatch
 
 #endregion
 
+#region ZombieImmuneAllDebuffs - 僵尸免疫一切负面效果补丁
+
+/// <summary>
+/// 僵尸免疫魅惑补丁 - Zombie.SetMindControl
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.SetMindControl))]
+public static class ZombieImmuneSetMindControlPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.High)]
+    public static bool Prefix(Zombie __instance)
+    {
+        if (!ZombieImmuneAllDebuffs) return true;
+        try
+        {
+            if (__instance == null) return true;
+            // 阻止魅惑效果
+            return false;
+        }
+        catch { return true; }
+    }
+}
+
+/// <summary>
+/// 僵尸免疫冻结补丁 - Zombie.SetFreeze
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.SetFreeze))]
+public static class ZombieImmuneSetFreezePatch
+{
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.High)]
+    public static bool Prefix(Zombie __instance)
+    {
+        if (!ZombieImmuneAllDebuffs) return true;
+        try
+        {
+            if (__instance == null) return true;
+            // 阻止冻结效果
+            return false;
+        }
+        catch { return true; }
+    }
+}
+
+/// <summary>
+/// 僵尸免疫减速补丁 - Zombie.SetCold
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.SetCold))]
+public static class ZombieImmuneSetColdPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.High)]
+    public static bool Prefix(Zombie __instance)
+    {
+        if (!ZombieImmuneAllDebuffs) return true;
+        try
+        {
+            if (__instance == null) return true;
+            // 阻止减速效果
+            return false;
+        }
+        catch { return true; }
+    }
+}
+
+/// <summary>
+/// 僵尸免疫黄油定身补丁 - Zombie.Buttered
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.Buttered))]
+public static class ZombieImmuneButteredPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.High)]
+    public static bool Prefix(Zombie __instance)
+    {
+        if (!ZombieImmuneAllDebuffs) return true;
+        try
+        {
+            if (__instance == null) return true;
+            // 阻止黄油定身效果
+            return false;
+        }
+        catch { return true; }
+    }
+}
+
+/// <summary>
+/// 僵尸免疫中毒补丁 - Zombie.SetPoison
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.SetPoison))]
+public static class ZombieImmuneSetPoisonPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.High)]
+    public static bool Prefix(Zombie __instance)
+    {
+        if (!ZombieImmuneAllDebuffs) return true;
+        try
+        {
+            if (__instance == null) return true;
+            // 阻止中毒效果
+            return false;
+        }
+        catch { return true; }
+    }
+}
+
+/// <summary>
+/// 僵尸免疫中毒等级增加补丁 - Zombie.AddPoisonLevel
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.AddPoisonLevel))]
+public static class ZombieImmuneAddPoisonLevelPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.High)]
+    public static bool Prefix(Zombie __instance)
+    {
+        if (!ZombieImmuneAllDebuffs) return true;
+        try
+        {
+            if (__instance == null) return true;
+            // 阻止中毒等级增加
+            return false;
+        }
+        catch { return true; }
+    }
+}
+
+/// <summary>
+/// 僵尸免疫吃大蒜补丁 - Zombie.EatGarlic
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.EatGarlic))]
+public static class ZombieImmuneEatGarlicPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.High)]
+    public static bool Prefix(Zombie __instance)
+    {
+        if (!ZombieImmuneAllDebuffs) return true;
+        try
+        {
+            if (__instance == null) return true;
+            // 阻止吃大蒜效果（蒜毒）
+            return false;
+        }
+        catch { return true; }
+    }
+}
+
+/// <summary>
+/// 僵尸免疫大蒜影响补丁 - Zombie.Garliced
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.Garliced))]
+public static class ZombieImmuneGarlicedPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.High)]
+    public static bool Prefix(Zombie __instance)
+    {
+        if (!ZombieImmuneAllDebuffs) return true;
+        try
+        {
+            if (__instance == null) return true;
+            // 阻止大蒜影响（换行）
+            return false;
+        }
+        catch { return true; }
+    }
+}
+
+/// <summary>
+/// 僵尸免疫击退补丁 - Zombie.KnockBack
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.KnockBack))]
+public static class ZombieImmuneKnockBackPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.High)]
+    public static bool Prefix(Zombie __instance)
+    {
+        if (!ZombieImmuneAllDebuffs) return true;
+        try
+        {
+            if (__instance == null) return true;
+            // 阻止击退效果
+            return false;
+        }
+        catch { return true; }
+    }
+}
+
+/// <summary>
+/// 僵尸免疫红温补丁 - Zombie.SetJalaed
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.SetJalaed))]
+public static class ZombieImmuneSetJalaedPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.High)]
+    public static bool Prefix(Zombie __instance)
+    {
+        if (!ZombieImmuneAllDebuffs) return true;
+        try
+        {
+            if (__instance == null) return true;
+            // 阻止红温效果
+            return false;
+        }
+        catch { return true; }
+    }
+}
+
+/// <summary>
+/// 僵尸免疫余烬补丁 - Zombie.SetEmbered
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.SetEmbered))]
+public static class ZombieImmuneSetEmberedPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.High)]
+    public static bool Prefix(Zombie __instance)
+    {
+        if (!ZombieImmuneAllDebuffs) return true;
+        try
+        {
+            if (__instance == null) return true;
+            // 阻止余烬效果
+            return false;
+        }
+        catch { return true; }
+    }
+}
+
+/// <summary>
+/// 僵尸免疫吞噬补丁 - Chomper.Chomp
+/// 这是实际执行吞噬僵尸的方法
+/// </summary>
+[HarmonyPatch(typeof(Chomper), nameof(Chomper.Chomp))]
+public static class ZombieImmuneChomperChompPatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(Chomper __instance, Zombie zombie)
+    {
+        if (!ZombieImmuneAllDebuffs) return true;
+        try
+        {
+            if (__instance == null || zombie == null) return true;
+            // 阻止吞噬效果
+            return false;
+        }
+        catch { return true; }
+    }
+}
+
+#endregion
+
 public class PatchMgr : MonoBehaviour
 {
     public static Board board = new();
@@ -3394,6 +3650,11 @@ public class PatchMgr : MonoBehaviour
     /// 击杀升级 - 植物击杀僵尸时自动升级
     /// </summary>
     public static bool KillUpgrade { get; set; } = false;
+
+    /// <summary>
+    /// 僵尸免疫一切负面效果 - 免疫负面buff、击退、吞噬、魅惑等
+    /// </summary>
+    public static bool ZombieImmuneAllDebuffs { get; set; } = false;
 
     /// <summary>
     /// 记录僵尸最后受到伤害的植物类型，用于击杀升级功能

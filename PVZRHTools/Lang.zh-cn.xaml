@@ -42,6 +42,8 @@
     <s:String x:Key="Tab1.Page6_5.ZombieBulletReflectChance.Tooltip">僵尸反弹子弹的概率（0-100%）</s:String>
     <s:String x:Key="Tab1.Page6_5.ZombieStatusCoexist">僵尸状态并存</s:String>
     <s:String x:Key="Tab1.Page6_5.ZombieStatusCoexist.Tooltip">启用后僵尸的红温（火焰）状态可与寒冰、蒜毒状态同时存在，不再互斥</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneAllDebuffs">僵尸免疫一切负面效果</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneAllDebuffs.Tooltip">启用后僵尸免疫所有负面效果，包括：冻结、减速、黄油定身、中毒、红温、余烬、击退、魅惑、吞噬、蒜毒等</s:String>
     <s:String x:Key="Tab1.Page7.Header">其他特性</s:String>
     <s:String x:Key="Tab1.Description">此修改器完全免费且已在github开源。若有付费/要求三连+关注/私信发链接的情况，说明你被骗了，请注意隐私和财产安全！</s:String>
     <s:String x:Key="Tab1.Page1.DevMode">开发者模式</s:String>
