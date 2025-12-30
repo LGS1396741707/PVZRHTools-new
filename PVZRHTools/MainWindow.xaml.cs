@@ -3,12 +3,14 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using FastHotKeyForWPF;
 using HandyControl.Controls;
 using HandyControl.Tools.Extension;
 using ComboBox = HandyControl.Controls.ComboBox;
 using ScrollViewer = HandyControl.Controls.ScrollViewer;
 using Window = System.Windows.Window;
+using Button = System.Windows.Controls.Button;
 using System.Management;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
@@ -16,6 +18,7 @@ using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Interop;
+using PVZRHTools.Animations;
 
 /// <summary>
 ///     Interaction logic for MainWindow.xaml
@@ -64,6 +67,47 @@ namespace PVZRHTools
                 DataContext = new ModifierViewModel();
 
             App.inited = true;
+            
+            // 窗口加载完成后播放启动动画
+            Loaded += MainWindow_Loaded;
+        }
+        
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            // 播放 OS 风格启动动画
+            WindowAnimations.PlayStartupAnimation(this);
+            
+            // 尝试启用 Windows 11 云母效果（如果可用）
+            if (AcrylicHelper.IsWindows11OrNewer())
+            {
+                // 可选：启用云母或亚克力效果
+                // AcrylicHelper.EnableMica(this);
+            }
+            
+            // 为所有按钮添加交互动画
+            ApplyAnimationsToControls(this);
+        }
+        
+        /// <summary>
+        /// 递归为所有控件应用动画效果
+        /// </summary>
+        private void ApplyAnimationsToControls(DependencyObject parent)
+        {
+            int childCount = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < childCount; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                
+                // 为按钮添加点击动画
+                if (child is Button button)
+                {
+                    ControlAnimations.AddButtonPressAnimation(button);
+                    ControlAnimations.AddHoverGlow(button, Color.FromRgb(255, 105, 180)); // 粉色发光
+                }
+                
+                // 递归处理子元素
+                ApplyAnimationsToControls(child);
+            }
         }
 
         public static MainWindow? Instance { get; set; }
