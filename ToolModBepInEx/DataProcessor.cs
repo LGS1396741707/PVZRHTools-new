@@ -253,6 +253,7 @@ public class DataProcessor : MonoBehaviour
             if (p1.ZombieStatusCoexist is not null) ZombieStatusCoexist = (bool)p1.ZombieStatusCoexist;
             if (p1.MNEntryEnabled is not null) MNEntryEnabled = (bool)p1.MNEntryEnabled;
             if (p1.UnlockRedCardPlants is not null) UnlockRedCardPlants = (bool)p1.UnlockRedCardPlants;
+            if (p1.KillUpgrade is not null) KillUpgrade = (bool)p1.KillUpgrade;
             return;
         }
 

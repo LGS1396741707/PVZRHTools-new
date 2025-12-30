@@ -11,6 +11,8 @@
     <s:String x:Key="Tab6.Header">Горячие клавиши в игре</s:String>
     <s:String x:Key="Tab7.Header">Разное</s:String>
     <s:String x:Key="Tab8.Header">Настройка PvE</s:String>
+    <s:String x:Key="Tab8.KillUpgrade">Улучшение за убийство</s:String>
+    <s:String x:Key="Tab8.KillUpgrade.Tooltip">Растения улучшаются за убийства: Ур.1=20 убийств, Ур.2=50 убийств, Ур.3=100 убийств, счётчик сбрасывается после каждого улучшения</s:String>
     <s:String x:Key="Tab9.Header">Зона записей</s:String>
     <s:String x:Key="Tab9.PlantEntry.Header">Записи растений</s:String>
     <s:String x:Key="Tab9.PlantEntry.Placeholder">Функции записей растений будут добавлены...</s:String>

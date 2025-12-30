@@ -86,6 +86,11 @@ public struct BasicProperties : ISyncData
     /// 取消红卡种植限制 - 允许在非神秘模式种植红卡植物(AbyssSwordStar, UltimateMinigun, SolarSunflower)
     /// </summary>
     public bool? UnlockRedCardPlants { get; set; }
+
+    /// <summary>
+    /// 击杀升级 - 植物击杀僵尸时自动升级
+    /// </summary>
+    public bool? KillUpgrade { get; set; }
 }
 
 [Serializable]

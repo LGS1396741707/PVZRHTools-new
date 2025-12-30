@@ -1373,6 +1373,11 @@ public partial class ModifierViewModel : ObservableObject
         App.DataSync.Value.SendData(new BasicProperties { UnlockRedCardPlants = value });
     }
 
+    partial void OnKillUpgradeChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { KillUpgrade = value });
+    }
+
     partial void OnPlantingNoCDChanged(bool value)
     {
         App.DataSync.Value.SendData(new BasicProperties { PlantingNoCD = value });
@@ -1765,6 +1770,8 @@ public partial class ModifierViewModel : ObservableObject
     [ObservableProperty] public partial bool MNEntryEnabled { get; set; }
 
     [ObservableProperty] public partial bool UnlockRedCardPlants { get; set; }
+
+    [ObservableProperty] public partial bool KillUpgrade { get; set; }
 
     [ObservableProperty] public partial bool PlantingNoCD { get; set; }
 

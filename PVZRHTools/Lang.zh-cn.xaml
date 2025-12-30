@@ -12,6 +12,8 @@
     <s:String x:Key="Tab6.Header">游戏内按键绑定</s:String>
     <s:String x:Key="Tab7.Header">杂项</s:String>
     <s:String x:Key="Tab8.Header">斗蛐蛐布阵</s:String>
+    <s:String x:Key="Tab8.KillUpgrade">击杀升级</s:String>
+    <s:String x:Key="Tab8.KillUpgrade.Tooltip">植物击杀僵尸时自动升级：1级需20杀，2级需50杀，3级需100杀，每次升级后重新计数</s:String>
     <s:String x:Key="Tab9.Header">词条专区</s:String>
     <s:String x:Key="Tab9.PlantEntry.Header">植物词条</s:String>
     <s:String x:Key="Tab9.PlantEntry.Placeholder">植物词条功能待添加...</s:String>

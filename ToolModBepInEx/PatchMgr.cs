@@ -1792,7 +1792,7 @@ public static class SuperLadderZombieGetDamagePatch
 /// <summary>
 /// 诅咒免疫补丁 - Zombie.TakeDamage (4参数版本)
 /// 通用诅咒免疫，清除僵尸的诅咒植物列表
-/// 同时处理僵尸限伤200功能
+/// 同时处理僵尸限伤200功能和击杀升级功能
 /// </summary>
 [HarmonyPatch(typeof(Zombie), nameof(Zombie.TakeDamage), new Type[] { typeof(DmgType), typeof(int), typeof(PlantType), typeof(bool) })]
 public static class ZombieTakeDamageCursePatch
@@ -1806,6 +1806,17 @@ public static class ZombieTakeDamageCursePatch
         if (ZombieDamageLimit200 && ZombieDamageLimitValue > 0 && theDamage > ZombieDamageLimitValue)
         {
             theDamage = ZombieDamageLimitValue;
+        }
+        
+        // 击杀升级功能 - 记录伤害来源植物
+        if (KillUpgrade && reportType != PlantType.Nothing && __instance != null)
+        {
+            try
+            {
+                int zombieId = __instance.GetInstanceID();
+                ZombieLastDamageSource[zombieId] = reportType;
+            }
+            catch { }
         }
         
         if (!CurseImmunity) return true;
@@ -3126,6 +3137,108 @@ public static class SolarSunflowerUnlockPatch
 
 #endregion
 
+#region 击杀升级补丁
+
+/// <summary>
+/// 击杀升级补丁 - Zombie.Die
+/// 当僵尸死亡时，找到最后造成伤害的植物并累计击杀数
+/// 升级到1级需要击杀20只，升级到2级需要击杀50只，升级到3级需要击杀100只
+/// 每次升级完成后重新计数
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.Die))]
+public static class ZombieDieKillUpgradePatch
+{
+    [HarmonyPostfix]
+    public static void Postfix(Zombie __instance)
+    {
+        if (!KillUpgrade || __instance == null) return;
+
+        try
+        {
+            int zombieId = __instance.GetInstanceID();
+
+            // 检查是否有记录的伤害来源
+            if (!ZombieLastDamageSource.TryGetValue(zombieId, out PlantType plantType))
+                return;
+
+            // 移除记录
+            ZombieLastDamageSource.Remove(zombieId);
+
+            if (plantType == PlantType.Nothing) return;
+
+            // 查找该类型的植物
+            var allPlants = Lawnf.GetAllPlants();
+            if (allPlants == null) return;
+
+            // 找到同行且距离最近的该类型植物
+            Plant targetPlant = null;
+            float minDistance = float.MaxValue;
+            int zombieRow = __instance.theZombieRow;
+            float zombieX = __instance.transform.position.x;
+
+            foreach (var plant in allPlants)
+            {
+                if (plant == null || plant.thePlantType != plantType) continue;
+                if (plant.thePlantRow != zombieRow) continue;
+
+                float distance = Mathf.Abs(plant.transform.position.x - zombieX);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    targetPlant = plant;
+                }
+            }
+
+            // 如果同行没找到，找全场最近的
+            if (targetPlant == null)
+            {
+                foreach (var plant in allPlants)
+                {
+                    if (plant == null || plant.thePlantType != plantType) continue;
+
+                    float distance = Vector3.Distance(plant.transform.position, __instance.transform.position);
+                    if (distance < minDistance)
+                    {
+                        minDistance = distance;
+                        targetPlant = plant;
+                    }
+                }
+            }
+
+            // 累计击杀数并检查是否可以升级
+            if (targetPlant != null && targetPlant.theLevel < 3)
+            {
+                int plantId = targetPlant.GetInstanceID();
+
+                // 获取或初始化击杀计数
+                if (!PlantKillCount.TryGetValue(plantId, out int killCount))
+                {
+                    killCount = 0;
+                }
+
+                // 增加击杀计数
+                killCount++;
+                PlantKillCount[plantId] = killCount;
+
+                // 检查是否达到升级所需击杀数
+                int targetLevel = targetPlant.theLevel + 1;
+                int requiredKills = GetKillsRequiredForLevel(targetLevel);
+
+                if (killCount >= requiredKills)
+                {
+                    // 升级植物
+                    targetPlant.Upgrade(targetLevel, true, false);
+                    // 重置击杀计数
+                    PlantKillCount[plantId] = 0;
+                }
+            }
+        }
+        catch { }
+    }
+}
+
+#endregion
+
 public class PatchMgr : MonoBehaviour
 {
     public static Board board = new();
@@ -3276,6 +3389,36 @@ public class PatchMgr : MonoBehaviour
     /// 取消红卡种植限制 - 允许在非神秘模式种植红卡植物(AbyssSwordStar, UltimateMinigun, SolarSunflower)
     /// </summary>
     public static bool UnlockRedCardPlants { get; set; } = false;
+
+    /// <summary>
+    /// 击杀升级 - 植物击杀僵尸时自动升级
+    /// </summary>
+    public static bool KillUpgrade { get; set; } = false;
+
+    /// <summary>
+    /// 记录僵尸最后受到伤害的植物类型，用于击杀升级功能
+    /// </summary>
+    public static Dictionary<int, PlantType> ZombieLastDamageSource { get; set; } = new Dictionary<int, PlantType>();
+
+    /// <summary>
+    /// 记录每个植物的击杀计数，用于击杀升级功能
+    /// Key: 植物实例ID, Value: 击杀数
+    /// </summary>
+    public static Dictionary<int, int> PlantKillCount { get; set; } = new Dictionary<int, int>();
+
+    /// <summary>
+    /// 获取升级到指定等级所需的击杀数
+    /// </summary>
+    public static int GetKillsRequiredForLevel(int targetLevel)
+    {
+        return targetLevel switch
+        {
+            1 => 20,   // 升级到1级需要击杀20只
+            2 => 50,   // 升级到2级需要击杀50只
+            3 => 100,  // 升级到3级需要击杀100只
+            _ => int.MaxValue
+        };
+    }
 
     public void Update()
     {

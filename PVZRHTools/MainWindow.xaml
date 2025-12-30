@@ -1163,7 +1163,12 @@
 
                             <Button x:Name="PvE" Content="一键放置五植物+一钻盲僵+四黄金盲僵尸+一巨盲盒僵（Ctrl+A）"
                                             HorizontalAlignment="Left" Height="30" Width="383"
-                                            Command="{Binding PvECommand}" Margin="10,0,0,0" />
+                                            Command="{Binding PvECommand}" Margin="10,175,0,0" VerticalAlignment="Top" />
+                            <CheckBox x:Name="KillUpgrade" IsChecked="{Binding KillUpgrade}"
+                                              Content="{DynamicResource Tab8.KillUpgrade}" Height="21"
+                                              Margin="10,215,0,0" VerticalAlignment="Top" Foreground="#FF333333"
+                                              BorderThickness="2,2,2,2" HorizontalAlignment="Left"
+                                              ToolTip="{DynamicResource Tab8.KillUpgrade.Tooltip}" />
                         </Grid>
                     </ScrollViewer>
                 </Border>
