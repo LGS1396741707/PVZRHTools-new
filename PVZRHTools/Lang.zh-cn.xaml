@@ -77,6 +77,8 @@
     <s:String x:Key="Tab1.Page4.ScaredyDream">胆小菇之梦</s:String>
     <s:String x:Key="Tab1.Page5.NoIceRoad">不生成冰道</s:String>
     <s:String x:Key="Tab1.Page5.DisableIceEffect">取消冰冻特效</s:String>
+    <s:String x:Key="Tab1.Page5.UnlockRedCardPlants">取消红卡种植限制</s:String>
+    <s:String x:Key="Tab1.Page5.UnlockRedCardPlants.Tooltip">允许在非神秘模式种植红卡植物(究极剑仙杨桃、究极速射樱桃射手、究极炽阳向日葵)</s:String>
     <s:String x:Key="Tab1.Page5.PotSmashingFix">砸罐子修复</s:String>
     <s:String x:Key="Tab1.Page5.PotSmashingFix.Tooltip">修复砸罐子关卡的问题：重叠罐子只砸一个、小丑/巨人/AOE不破坏罐子</s:String>
     <s:String x:Key="Tab1.Page5.UnlimitedSunlight">阳光无上限</s:String>

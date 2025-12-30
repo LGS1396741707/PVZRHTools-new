@@ -3022,6 +3022,110 @@ public static class MousePatch
     }
 }
 
+#region 取消红卡种植限制补丁
+
+/// <summary>
+/// 究极剑仙杨桃(AbyssSwordStar)补丁 - 取消红卡种植限制
+/// 在Awake方法前临时修改GameStatus，在Start方法前临时修改BoardType为神秘模式(7)
+/// </summary>
+[HarmonyPatch(typeof(AbyssSwordStar))]
+public static class AbyssSwordStarUnlockPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPatch("Awake")]
+    public static void PreAwake(ref GameStatus __state)
+    {
+        __state = GameAPP.theGameStatus;
+        if (UnlockRedCardPlants)
+        {
+            GameAPP.theGameStatus = (GameStatus)(-1);
+        }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch("Awake")]
+    public static void PostAwake(ref GameStatus __state)
+    {
+        GameAPP.theGameStatus = __state;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch("Start")]
+    public static void PreStart(ref LevelType __state)
+    {
+        __state = GameAPP.theBoardType;
+        if (UnlockRedCardPlants)
+        {
+            GameAPP.theBoardType = (LevelType)7; // 神秘模式
+        }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch("Start")]
+    public static void PostStart(ref LevelType __state)
+    {
+        GameAPP.theBoardType = __state;
+    }
+}
+
+/// <summary>
+/// 究极速射樱桃射手(UltimateMinigun)补丁 - 取消红卡种植限制
+/// 在Start方法前临时修改BoardTag.isTreasure为true
+/// </summary>
+[HarmonyPatch(typeof(UltimateMinigun))]
+public static class UltimateMinigunUnlockPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPatch("Start")]
+    public static void PreStart(ref Board.BoardTag __state)
+    {
+        __state = Board.Instance.boardTag;
+        if (UnlockRedCardPlants)
+        {
+            Board.BoardTag boardTag = Board.Instance.boardTag;
+            boardTag.isTreasure = true;
+            Board.Instance.boardTag = boardTag;
+        }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch("Start")]
+    public static void PostStart(ref Board.BoardTag __state)
+    {
+        Board.Instance.boardTag = __state;
+    }
+}
+
+/// <summary>
+/// 究极炽阳向日葵(SolarSunflower)补丁 - 取消红卡种植限制
+/// 在Start方法前临时修改BoardTag.isTreasure为true
+/// </summary>
+[HarmonyPatch(typeof(SolarSunflower))]
+public static class SolarSunflowerUnlockPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPatch("Start")]
+    public static void PreStart(ref Board.BoardTag __state)
+    {
+        __state = Board.Instance.boardTag;
+        if (UnlockRedCardPlants)
+        {
+            Board.BoardTag boardTag = Board.Instance.boardTag;
+            boardTag.isTreasure = true;
+            Board.Instance.boardTag = boardTag;
+        }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch("Start")]
+    public static void PostStart(ref Board.BoardTag __state)
+    {
+        Board.Instance.boardTag = __state;
+    }
+}
+
+#endregion
+
 public class PatchMgr : MonoBehaviour
 {
     public static Board board = new();
@@ -3167,6 +3271,11 @@ public class PatchMgr : MonoBehaviour
     /// 鱼丸词条 - 坚不可摧(伤害最多200) + 高级后勤(双倍恢复, 阳光磁力菇CD减少)
     /// </summary>
     public static bool MNEntryEnabled { get; set; } = false;
+    
+    /// <summary>
+    /// 取消红卡种植限制 - 允许在非神秘模式种植红卡植物(AbyssSwordStar, UltimateMinigun, SolarSunflower)
+    /// </summary>
+    public static bool UnlockRedCardPlants { get; set; } = false;
 
     public void Update()
     {

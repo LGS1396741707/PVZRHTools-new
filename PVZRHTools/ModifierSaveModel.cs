@@ -61,6 +61,7 @@ public struct ModifierSaveModel
     public bool NoHole { get; set; }
     public bool NoIceRoad { get; set; }
     public bool DisableIceEffect { get; set; }
+    public bool UnlockRedCardPlants { get; set; }
     public bool PlantingNoCD { get; set; }
     public int PlantType { get; set; }
     public bool PlantUpgrade { get; set; }

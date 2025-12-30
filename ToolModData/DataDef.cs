@@ -81,6 +81,11 @@ public struct BasicProperties : ISyncData
     /// 鱼丸词条 - 坚不可摧(伤害最多200) + 高级后勤(双倍恢复, 阳光磁力菇CD减少)
     /// </summary>
     public bool? MNEntryEnabled { get; set; }
+    
+    /// <summary>
+    /// 取消红卡种植限制 - 允许在非神秘模式种植红卡植物(AbyssSwordStar, UltimateMinigun, SolarSunflower)
+    /// </summary>
+    public bool? UnlockRedCardPlants { get; set; }
 }
 
 [Serializable]

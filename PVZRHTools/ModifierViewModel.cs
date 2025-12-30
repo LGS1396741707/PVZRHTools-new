@@ -283,6 +283,7 @@ public partial class ModifierViewModel : ObservableObject
         NoHole = s.NoHole;
         NoIceRoad = s.NoIceRoad;
         DisableIceEffect = s.DisableIceEffect;
+        UnlockRedCardPlants = s.UnlockRedCardPlants;
         PlantingNoCD = s.PlantingNoCD;
         PlantType = s.PlantType;
         PresentFastOpen = s.PresentFastOpen;
@@ -729,6 +730,7 @@ public partial class ModifierViewModel : ObservableObject
             NoHole = NoHole,
             NoIceRoad = NoIceRoad,
             DisableIceEffect = DisableIceEffect,
+            UnlockRedCardPlants = UnlockRedCardPlants,
             PlantingNoCD = PlantingNoCD,
             PlantType = PlantType,
             PresentFastOpen = PresentFastOpen,
@@ -877,6 +879,7 @@ public partial class ModifierViewModel : ObservableObject
                 NoHole = NoHole,
                 NoIceRoad = NoIceRoad,
                 DisableIceEffect = DisableIceEffect,
+                UnlockRedCardPlants = UnlockRedCardPlants,
                 PlantingNoCD = PlantingNoCD,
                 PresentFastOpen = PresentFastOpen,
                 SuperPresent = SuperPresent,
@@ -1365,6 +1368,11 @@ public partial class ModifierViewModel : ObservableObject
         App.DataSync.Value.SendData(new BasicProperties { MNEntryEnabled = value });
     }
 
+    partial void OnUnlockRedCardPlantsChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { UnlockRedCardPlants = value });
+    }
+
     partial void OnPlantingNoCDChanged(bool value)
     {
         App.DataSync.Value.SendData(new BasicProperties { PlantingNoCD = value });
@@ -1755,6 +1763,8 @@ public partial class ModifierViewModel : ObservableObject
     [ObservableProperty] public partial bool ZombieStatusCoexist { get; set; }
 
     [ObservableProperty] public partial bool MNEntryEnabled { get; set; }
+
+    [ObservableProperty] public partial bool UnlockRedCardPlants { get; set; }
 
     [ObservableProperty] public partial bool PlantingNoCD { get; set; }
 
