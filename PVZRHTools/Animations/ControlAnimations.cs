@@ -14,6 +14,18 @@ namespace PVZRHTools.Animations
     /// </summary>
     public static class ControlAnimations
     {
+        /// <summary>
+        /// 检查是否启用动画
+        /// </summary>
+        private static bool IsAnimationEnabled()
+        {
+            if (MainWindow.Instance?.DataContext is ModifierViewModel vm)
+            {
+                return vm.EnableAnimations;
+            }
+            return true; // 默认启用
+        }
+
         #region CheckBox/ToggleButton 切换动画
         
         /// <summary>
@@ -26,8 +38,8 @@ namespace PVZRHTools.Animations
 
             checkBox.Checked += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)checkBox.RenderTransform;
-                // 弹性放大效果
                 var bounceAnim = new DoubleAnimationUsingKeyFrames { Duration = TimeSpan.FromMilliseconds(400) };
                 bounceAnim.KeyFrames.Add(new EasingDoubleKeyFrame(1.2, KeyTime.FromPercent(0.3), new CubicEase { EasingMode = EasingMode.EaseOut }));
                 bounceAnim.KeyFrames.Add(new EasingDoubleKeyFrame(0.9, KeyTime.FromPercent(0.6), new CubicEase { EasingMode = EasingMode.EaseInOut }));
@@ -41,6 +53,7 @@ namespace PVZRHTools.Animations
 
             checkBox.Unchecked += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)checkBox.RenderTransform;
                 var shrinkAnim = new DoubleAnimationUsingKeyFrames { Duration = TimeSpan.FromMilliseconds(250) };
                 shrinkAnim.KeyFrames.Add(new EasingDoubleKeyFrame(0.85, KeyTime.FromPercent(0.4), new CubicEase { EasingMode = EasingMode.EaseOut }));
@@ -52,9 +65,9 @@ namespace PVZRHTools.Animations
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, shrinkAnim);
             };
 
-            // 悬停效果
             checkBox.MouseEnter += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)checkBox.RenderTransform;
                 scale.BeginAnimation(ScaleTransform.ScaleXProperty, CreateQuickAnimation(1.05, 150));
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, CreateQuickAnimation(1.05, 150));
@@ -62,6 +75,7 @@ namespace PVZRHTools.Animations
 
             checkBox.MouseLeave += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)checkBox.RenderTransform;
                 var animX = CreateQuickAnimation(1, 150);
                 var animY = CreateQuickAnimation(1, 150);
@@ -84,6 +98,7 @@ namespace PVZRHTools.Animations
 
             toggleButton.Checked += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)toggleButton.RenderTransform;
                 var bounceAnim = new DoubleAnimationUsingKeyFrames { Duration = TimeSpan.FromMilliseconds(350) };
                 bounceAnim.KeyFrames.Add(new EasingDoubleKeyFrame(1.15, KeyTime.FromPercent(0.35), new CubicEase { EasingMode = EasingMode.EaseOut }));
@@ -97,6 +112,7 @@ namespace PVZRHTools.Animations
 
             toggleButton.Unchecked += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)toggleButton.RenderTransform;
                 var shrinkAnim = CreateQuickAnimation(1, 200);
                 shrinkAnim.From = 0.9;
@@ -120,7 +136,6 @@ namespace PVZRHTools.Animations
             textBox.RenderTransformOrigin = new Point(0.5, 0.5);
             textBox.RenderTransform = new ScaleTransform(1, 1);
             
-            // 添加发光效果
             var glowEffect = new DropShadowEffect
             {
                 Color = Color.FromRgb(255, 105, 180),
@@ -132,6 +147,7 @@ namespace PVZRHTools.Animations
 
             textBox.GotFocus += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)textBox.RenderTransform;
                 scale.BeginAnimation(ScaleTransform.ScaleXProperty, CreateQuickAnimation(1.02, 200));
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, CreateQuickAnimation(1.02, 200));
@@ -142,6 +158,7 @@ namespace PVZRHTools.Animations
 
             textBox.LostFocus += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)textBox.RenderTransform;
                 var animX = CreateQuickAnimation(1, 200);
                 var animY = CreateQuickAnimation(1, 200);
@@ -165,6 +182,7 @@ namespace PVZRHTools.Animations
 
         #endregion
 
+
         #region 数值变化脉冲动画
 
         /// <summary>
@@ -172,6 +190,7 @@ namespace PVZRHTools.Animations
         /// </summary>
         public static void PlayValueChangePulse(FrameworkElement element)
         {
+            if (!IsAnimationEnabled()) return;
             element.RenderTransformOrigin = new Point(0.5, 0.5);
             if (element.RenderTransform is not ScaleTransform)
                 element.RenderTransform = new ScaleTransform(1, 1);
@@ -187,7 +206,6 @@ namespace PVZRHTools.Animations
             scale.BeginAnimation(ScaleTransform.ScaleXProperty, pulseAnim);
             scale.BeginAnimation(ScaleTransform.ScaleYProperty, pulseAnim);
 
-            // 背景闪烁效果
             if (element is Control control)
             {
                 var originalBg = control.Background;
@@ -223,6 +241,7 @@ namespace PVZRHTools.Animations
 
             item.MouseEnter += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)((TransformGroup)item.RenderTransform).Children[0];
                 var translate = (TranslateTransform)((TransformGroup)item.RenderTransform).Children[1];
                 
@@ -233,6 +252,7 @@ namespace PVZRHTools.Animations
 
             item.MouseLeave += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)((TransformGroup)item.RenderTransform).Children[0];
                 var translate = (TranslateTransform)((TransformGroup)item.RenderTransform).Children[1];
                 
@@ -262,6 +282,7 @@ namespace PVZRHTools.Animations
 
             row.MouseEnter += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)row.RenderTransform;
                 scale.BeginAnimation(ScaleTransform.ScaleXProperty, CreateQuickAnimation(1.005, 150));
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, CreateQuickAnimation(1.01, 150));
@@ -269,6 +290,7 @@ namespace PVZRHTools.Animations
 
             row.MouseLeave += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)row.RenderTransform;
                 var animX = CreateQuickAnimation(1, 150);
                 var animY = CreateQuickAnimation(1, 150);
@@ -299,6 +321,15 @@ namespace PVZRHTools.Animations
 
             menu.Opened += (s, e) =>
             {
+                if (!IsAnimationEnabled())
+                {
+                    var scale2 = (ScaleTransform)((TransformGroup)menu.RenderTransform).Children[0];
+                    var translate2 = (TranslateTransform)((TransformGroup)menu.RenderTransform).Children[1];
+                    scale2.ScaleX = 1; scale2.ScaleY = 1;
+                    translate2.Y = 0;
+                    menu.Opacity = 1;
+                    return;
+                }
                 var scale = (ScaleTransform)((TransformGroup)menu.RenderTransform).Children[0];
                 var translate = (TranslateTransform)((TransformGroup)menu.RenderTransform).Children[1];
 
@@ -315,7 +346,6 @@ namespace PVZRHTools.Animations
 
             menu.Closed += (s, e) =>
             {
-                // 重置状态
                 var scale = (ScaleTransform)((TransformGroup)menu.RenderTransform).Children[0];
                 var translate = (TranslateTransform)((TransformGroup)menu.RenderTransform).Children[1];
                 scale.ScaleX = 0.8;
@@ -340,6 +370,13 @@ namespace PVZRHTools.Animations
 
             toolTip.Opened += (s, e) =>
             {
+                if (!IsAnimationEnabled())
+                {
+                    var scale2 = (ScaleTransform)toolTip.RenderTransform;
+                    scale2.ScaleX = 1; scale2.ScaleY = 1;
+                    toolTip.Opacity = 1;
+                    return;
+                }
                 var scale = (ScaleTransform)toolTip.RenderTransform;
                 
                 var fadeIn = CreateQuickAnimation(1, 200);
@@ -361,6 +398,7 @@ namespace PVZRHTools.Animations
 
         #endregion
 
+
         #region 加载状态脉冲动画
 
         /// <summary>
@@ -375,8 +413,7 @@ namespace PVZRHTools.Animations
 
             var scaleXAnim = new DoubleAnimation
             {
-                From = 1,
-                To = 1.05,
+                From = 1, To = 1.05,
                 Duration = TimeSpan.FromMilliseconds(800),
                 AutoReverse = true,
                 EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
@@ -386,8 +423,7 @@ namespace PVZRHTools.Animations
 
             var scaleYAnim = new DoubleAnimation
             {
-                From = 1,
-                To = 1.05,
+                From = 1, To = 1.05,
                 Duration = TimeSpan.FromMilliseconds(800),
                 AutoReverse = true,
                 EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
@@ -397,8 +433,7 @@ namespace PVZRHTools.Animations
 
             var opacityAnim = new DoubleAnimation
             {
-                From = 1,
-                To = 0.7,
+                From = 1, To = 0.7,
                 Duration = TimeSpan.FromMilliseconds(800),
                 AutoReverse = true,
                 EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
@@ -441,6 +476,7 @@ namespace PVZRHTools.Animations
 
             comboBox.DropDownOpened += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)comboBox.RenderTransform;
                 var bounceAnim = new DoubleAnimationUsingKeyFrames { Duration = TimeSpan.FromMilliseconds(300) };
                 bounceAnim.KeyFrames.Add(new EasingDoubleKeyFrame(1.03, KeyTime.FromPercent(0.4), new CubicEase { EasingMode = EasingMode.EaseOut }));
@@ -454,6 +490,7 @@ namespace PVZRHTools.Animations
 
             comboBox.DropDownClosed += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)comboBox.RenderTransform;
                 var shrinkAnim = new DoubleAnimationUsingKeyFrames { Duration = TimeSpan.FromMilliseconds(200) };
                 shrinkAnim.KeyFrames.Add(new EasingDoubleKeyFrame(0.98, KeyTime.FromPercent(0.3), new CubicEase { EasingMode = EasingMode.EaseOut }));
@@ -480,6 +517,7 @@ namespace PVZRHTools.Animations
 
             slider.ValueChanged += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)slider.RenderTransform;
                 var pulseAnim = new DoubleAnimationUsingKeyFrames { Duration = TimeSpan.FromMilliseconds(200) };
                 pulseAnim.KeyFrames.Add(new EasingDoubleKeyFrame(1.02, KeyTime.FromPercent(0.5), new CubicEase { EasingMode = EasingMode.EaseOut }));
@@ -493,12 +531,14 @@ namespace PVZRHTools.Animations
 
             slider.MouseEnter += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)slider.RenderTransform;
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, CreateQuickAnimation(1.1, 150));
             };
 
             slider.MouseLeave += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)slider.RenderTransform;
                 var anim = CreateQuickAnimation(1, 150);
                 anim.FillBehavior = FillBehavior.Stop;
@@ -508,6 +548,7 @@ namespace PVZRHTools.Animations
         }
 
         #endregion
+
 
         #region 原有动画方法
         /// <summary>
@@ -523,29 +564,26 @@ namespace PVZRHTools.Animations
 
             button.PreviewMouseLeftButtonDown += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)button.RenderTransform;
-                scale.BeginAnimation(ScaleTransform.ScaleXProperty, 
-                    CreateQuickAnimation(0.95, 80));
-                scale.BeginAnimation(ScaleTransform.ScaleYProperty, 
-                    CreateQuickAnimation(0.95, 80));
+                scale.BeginAnimation(ScaleTransform.ScaleXProperty, CreateQuickAnimation(0.95, 80));
+                scale.BeginAnimation(ScaleTransform.ScaleYProperty, CreateQuickAnimation(0.95, 80));
             };
 
             button.PreviewMouseLeftButtonUp += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)button.RenderTransform;
-                scale.BeginAnimation(ScaleTransform.ScaleXProperty, 
-                    CreateSpringAnimation(1.0, 150));
-                scale.BeginAnimation(ScaleTransform.ScaleYProperty, 
-                    CreateSpringAnimation(1.0, 150));
+                scale.BeginAnimation(ScaleTransform.ScaleXProperty, CreateSpringAnimation(1.0, 150));
+                scale.BeginAnimation(ScaleTransform.ScaleYProperty, CreateSpringAnimation(1.0, 150));
             };
 
             button.MouseLeave += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)button.RenderTransform;
-                scale.BeginAnimation(ScaleTransform.ScaleXProperty, 
-                    CreateQuickAnimation(1.0, 100));
-                scale.BeginAnimation(ScaleTransform.ScaleYProperty, 
-                    CreateQuickAnimation(1.0, 100));
+                scale.BeginAnimation(ScaleTransform.ScaleXProperty, CreateQuickAnimation(1.0, 100));
+                scale.BeginAnimation(ScaleTransform.ScaleYProperty, CreateQuickAnimation(1.0, 100));
             };
         }
 
@@ -567,18 +605,16 @@ namespace PVZRHTools.Animations
 
             element.MouseEnter += (s, e) =>
             {
-                dropShadow.BeginAnimation(DropShadowEffect.BlurRadiusProperty,
-                    CreateQuickAnimation(15, 200));
-                dropShadow.BeginAnimation(DropShadowEffect.OpacityProperty,
-                    CreateQuickAnimation(0.6, 200));
+                if (!IsAnimationEnabled()) return;
+                dropShadow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, CreateQuickAnimation(15, 200));
+                dropShadow.BeginAnimation(DropShadowEffect.OpacityProperty, CreateQuickAnimation(0.6, 200));
             };
 
             element.MouseLeave += (s, e) =>
             {
-                dropShadow.BeginAnimation(DropShadowEffect.BlurRadiusProperty,
-                    CreateQuickAnimation(0, 200));
-                dropShadow.BeginAnimation(DropShadowEffect.OpacityProperty,
-                    CreateQuickAnimation(0, 200));
+                if (!IsAnimationEnabled()) return;
+                dropShadow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, CreateQuickAnimation(0, 200));
+                dropShadow.BeginAnimation(DropShadowEffect.OpacityProperty, CreateQuickAnimation(0, 200));
             };
         }
 
@@ -594,16 +630,16 @@ namespace PVZRHTools.Animations
 
             element.MouseEnter += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var translate = (TranslateTransform)element.RenderTransform;
-                translate.BeginAnimation(TranslateTransform.YProperty,
-                    CreateSpringAnimation(-3, 200));
+                translate.BeginAnimation(TranslateTransform.YProperty, CreateSpringAnimation(-3, 200));
             };
 
             element.MouseLeave += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var translate = (TranslateTransform)element.RenderTransform;
-                translate.BeginAnimation(TranslateTransform.YProperty,
-                    CreateSpringAnimation(0, 200));
+                translate.BeginAnimation(TranslateTransform.YProperty, CreateSpringAnimation(0, 200));
             };
         }
 
@@ -612,6 +648,7 @@ namespace PVZRHTools.Animations
         /// </summary>
         public static void AnimateTabSwitch(FrameworkElement content)
         {
+            if (!IsAnimationEnabled()) return;
             content.Opacity = 0;
             var translate = new TranslateTransform(20, 0);
             content.RenderTransform = translate;
@@ -628,6 +665,7 @@ namespace PVZRHTools.Animations
         /// </summary>
         public static void AnimateListItemEntrance(FrameworkElement item, int index)
         {
+            if (!IsAnimationEnabled()) return;
             item.Opacity = 0;
             var translate = new TranslateTransform(0, 20);
             item.RenderTransform = translate;
@@ -636,8 +674,7 @@ namespace PVZRHTools.Animations
 
             var fadeIn = new DoubleAnimation
             {
-                From = 0,
-                To = 1,
+                From = 0, To = 1,
                 Duration = TimeSpan.FromMilliseconds(300),
                 BeginTime = delay,
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
@@ -645,8 +682,7 @@ namespace PVZRHTools.Animations
 
             var slideUp = new DoubleAnimation
             {
-                From = 20,
-                To = 0,
+                From = 20, To = 0,
                 Duration = TimeSpan.FromMilliseconds(350),
                 BeginTime = delay,
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
@@ -661,6 +697,7 @@ namespace PVZRHTools.Animations
         /// </summary>
         public static void PlaySuccessFeedback(FrameworkElement element)
         {
+            if (!IsAnimationEnabled()) return;
             var originalBackground = (element as Control)?.Background;
             
             var colorAnim = new ColorAnimation
@@ -683,14 +720,11 @@ namespace PVZRHTools.Animations
         /// </summary>
         public static void PlayErrorShake(FrameworkElement element)
         {
+            if (!IsAnimationEnabled()) return;
             var translate = element.RenderTransform as TranslateTransform ?? new TranslateTransform();
             element.RenderTransform = translate;
 
-            var shake = new DoubleAnimationUsingKeyFrames
-            {
-                Duration = TimeSpan.FromMilliseconds(400)
-            };
-            
+            var shake = new DoubleAnimationUsingKeyFrames { Duration = TimeSpan.FromMilliseconds(400) };
             shake.KeyFrames.Add(new LinearDoubleKeyFrame(0, KeyTime.FromPercent(0)));
             shake.KeyFrames.Add(new LinearDoubleKeyFrame(-8, KeyTime.FromPercent(0.1)));
             shake.KeyFrames.Add(new LinearDoubleKeyFrame(8, KeyTime.FromPercent(0.3)));
@@ -707,13 +741,12 @@ namespace PVZRHTools.Animations
         /// </summary>
         public static void AddTabItemAnimation(TabItem tabItem)
         {
-            // 只使用缩放变换，不使用位移，避免位置偏移
             tabItem.RenderTransformOrigin = new Point(0.5, 0.5);
             tabItem.RenderTransform = new ScaleTransform(1, 1);
 
-            // 悬停动画 - 只缩放，不位移
             tabItem.MouseEnter += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 if (!tabItem.IsSelected)
                 {
                     var scale = (ScaleTransform)tabItem.RenderTransform;
@@ -724,8 +757,8 @@ namespace PVZRHTools.Animations
 
             tabItem.MouseLeave += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)tabItem.RenderTransform;
-                // 使用 FillBehavior.Stop 确保动画结束后回到原始值
                 var animX = CreateQuickAnimation(1, 150);
                 var animY = CreateQuickAnimation(1, 150);
                 animX.FillBehavior = FillBehavior.Stop;
@@ -736,9 +769,9 @@ namespace PVZRHTools.Animations
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, animY);
             };
 
-            // 点击动画
             tabItem.PreviewMouseLeftButtonDown += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)tabItem.RenderTransform;
                 scale.BeginAnimation(ScaleTransform.ScaleXProperty, CreateQuickAnimation(0.95, 80));
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, CreateQuickAnimation(0.95, 80));
@@ -746,8 +779,8 @@ namespace PVZRHTools.Animations
 
             tabItem.PreviewMouseLeftButtonUp += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)tabItem.RenderTransform;
-                // 点击释放后确保回到原位
                 var animX = CreateQuickAnimation(1, 150);
                 var animY = CreateQuickAnimation(1, 150);
                 animX.FillBehavior = FillBehavior.Stop;
@@ -766,9 +799,9 @@ namespace PVZRHTools.Animations
         {
             tabControl.SelectionChanged += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 if (e.Source == tabControl && tabControl.SelectedContent is FrameworkElement content)
                 {
-                    // 内容淡入 + 滑入动画
                     content.Opacity = 0;
                     content.RenderTransformOrigin = new Point(0, 0.5);
                     var translate = new TranslateTransform(25, 0);
@@ -776,16 +809,14 @@ namespace PVZRHTools.Animations
 
                     var fadeIn = new DoubleAnimation
                     {
-                        From = 0,
-                        To = 1,
+                        From = 0, To = 1,
                         Duration = TimeSpan.FromMilliseconds(250),
                         EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
                     };
 
                     var slideIn = new DoubleAnimation
                     {
-                        From = 25,
-                        To = 0,
+                        From = 25, To = 0,
                         Duration = TimeSpan.FromMilliseconds(300),
                         EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
                     };
@@ -796,18 +827,18 @@ namespace PVZRHTools.Animations
             };
         }
 
+
         /// <summary>
         /// 为 Expander 添加展开/折叠动画和悬停效果
         /// </summary>
         public static void AddExpanderAnimation(Expander expander)
         {
-            // 设置变换
             expander.RenderTransformOrigin = new Point(0.5, 0);
             expander.RenderTransform = new ScaleTransform(1, 1);
 
-            // 悬停动画 - 轻微放大
             expander.MouseEnter += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)expander.RenderTransform;
                 scale.BeginAnimation(ScaleTransform.ScaleXProperty, CreateQuickAnimation(1.008, 150));
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, CreateQuickAnimation(1.008, 150));
@@ -815,6 +846,7 @@ namespace PVZRHTools.Animations
 
             expander.MouseLeave += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)expander.RenderTransform;
                 var animX = CreateQuickAnimation(1, 150);
                 var animY = CreateQuickAnimation(1, 150);
@@ -826,12 +858,11 @@ namespace PVZRHTools.Animations
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, animY);
             };
 
-            // 展开时整体动画 - 更明显的弹性效果
             expander.Expanded += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)expander.RenderTransform;
                 
-                // 整体弹性缩放动画
                 var bounceX = new DoubleAnimationUsingKeyFrames { Duration = TimeSpan.FromMilliseconds(400) };
                 bounceX.KeyFrames.Add(new EasingDoubleKeyFrame(1.0, KeyTime.FromPercent(0)));
                 bounceX.KeyFrames.Add(new EasingDoubleKeyFrame(1.015, KeyTime.FromPercent(0.25), new CubicEase { EasingMode = EasingMode.EaseOut }));
@@ -851,7 +882,6 @@ namespace PVZRHTools.Animations
                 scale.BeginAnimation(ScaleTransform.ScaleXProperty, bounceX);
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, bounceY);
 
-                // 尝试对内容应用动画
                 expander.Dispatcher.BeginInvoke(new Action(() =>
                 {
                     if (expander.Content is FrameworkElement content)
@@ -863,26 +893,9 @@ namespace PVZRHTools.Animations
                         transformGroup.Children.Add(new TranslateTransform(0, -20));
                         content.RenderTransform = transformGroup;
 
-                        var fadeIn = new DoubleAnimation
-                        {
-                            From = 0, To = 1,
-                            Duration = TimeSpan.FromMilliseconds(350),
-                            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-                        };
-
-                        var scaleYAnim = new DoubleAnimation
-                        {
-                            From = 0.5, To = 1,
-                            Duration = TimeSpan.FromMilliseconds(400),
-                            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-                        };
-
-                        var slideDown = new DoubleAnimation
-                        {
-                            From = -20, To = 0,
-                            Duration = TimeSpan.FromMilliseconds(400),
-                            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-                        };
+                        var fadeIn = new DoubleAnimation { From = 0, To = 1, Duration = TimeSpan.FromMilliseconds(350), EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+                        var scaleYAnim = new DoubleAnimation { From = 0.5, To = 1, Duration = TimeSpan.FromMilliseconds(400), EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+                        var slideDown = new DoubleAnimation { From = -20, To = 0, Duration = TimeSpan.FromMilliseconds(400), EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
 
                         content.BeginAnimation(UIElement.OpacityProperty, fadeIn);
                         ((ScaleTransform)((TransformGroup)content.RenderTransform).Children[0]).BeginAnimation(ScaleTransform.ScaleYProperty, scaleYAnim);
@@ -891,9 +904,9 @@ namespace PVZRHTools.Animations
                 }), System.Windows.Threading.DispatcherPriority.Loaded);
             };
 
-            // 折叠时动画
             expander.Collapsed += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)expander.RenderTransform;
                 
                 var shrinkX = new DoubleAnimationUsingKeyFrames { Duration = TimeSpan.FromMilliseconds(250) };
@@ -914,9 +927,9 @@ namespace PVZRHTools.Animations
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, shrinkY);
             };
 
-            // 点击头部时的反馈动画
             expander.PreviewMouseLeftButtonDown += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)expander.RenderTransform;
                 scale.BeginAnimation(ScaleTransform.ScaleXProperty, CreateQuickAnimation(0.98, 80));
                 scale.BeginAnimation(ScaleTransform.ScaleYProperty, CreateQuickAnimation(0.98, 80));
@@ -924,6 +937,7 @@ namespace PVZRHTools.Animations
 
             expander.PreviewMouseLeftButtonUp += (s, e) =>
             {
+                if (!IsAnimationEnabled()) return;
                 var scale = (ScaleTransform)expander.RenderTransform;
                 var animX = CreateQuickAnimation(1, 150);
                 var animY = CreateQuickAnimation(1, 150);
