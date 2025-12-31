@@ -744,6 +744,10 @@ public static class CreateBulletPatch
 {
     public static void Prefix(ref BulletType theBulletType)
     {
+        // 随机子弹功能（独立开关）
+        if (RandomBullet)
+            theBulletType = (BulletType)Random.Range(0, 120);
+        // 锁定子弹类型功能
         if (LockBulletType == -1)
             theBulletType = Enum.GetValues<BulletType>()[Random.Range(0, Enum.GetValues<BulletType>().Length)];
         if (LockBulletType >= 0) theBulletType = (BulletType)LockBulletType;
@@ -3670,6 +3674,11 @@ public class PatchMgr : MonoBehaviour
     /// 僵尸免疫一切负面效果 - 免疫负面buff、击退、吞噬、魅惑等
     /// </summary>
     public static bool ZombieImmuneAllDebuffs { get; set; } = false;
+
+    /// <summary>
+    /// 随机子弹 - 植物发射的子弹类型随机
+    /// </summary>
+    public static bool RandomBullet { get; set; } = false;
 
     /// <summary>
     /// 记录僵尸最后受到伤害的植物类型，用于击杀升级功能

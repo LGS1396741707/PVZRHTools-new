@@ -255,6 +255,7 @@ public class DataProcessor : MonoBehaviour
             if (p1.UnlockRedCardPlants is not null) UnlockRedCardPlants = (bool)p1.UnlockRedCardPlants;
             if (p1.KillUpgrade is not null) KillUpgrade = (bool)p1.KillUpgrade;
             if (p1.ZombieImmuneAllDebuffs is not null) ZombieImmuneAllDebuffs = (bool)p1.ZombieImmuneAllDebuffs;
+            if (p1.RandomBullet is not null) RandomBullet = (bool)p1.RandomBullet;
             return;
         }
 

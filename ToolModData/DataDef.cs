@@ -96,6 +96,11 @@ public struct BasicProperties : ISyncData
     /// 僵尸免疫一切负面效果 - 免疫负面buff、击退、吞噬、魅惑等
     /// </summary>
     public bool? ZombieImmuneAllDebuffs { get; set; }
+
+    /// <summary>
+    /// 随机子弹 - 植物发射的子弹类型随机
+    /// </summary>
+    public bool? RandomBullet { get; set; }
 }
 
 [Serializable]

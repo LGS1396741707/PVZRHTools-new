@@ -770,6 +770,13 @@
                                                 ToolTip="{DynamicResource Tab1.Page7.SpawnPetFootball.Tooltip}"
                                                 HorizontalAlignment="Left" Margin="0,0,10,0" Padding="8,0" />
                                     </WrapPanel>
+                                    <WrapPanel Orientation="Horizontal" Margin="0,5,0,5">
+                                        <CheckBox x:Name="RandomBullet" IsChecked="{Binding RandomBullet}"
+                                                  Content="{DynamicResource Tab1.Page7.RandomBullet}" Height="21"
+                                                  VerticalAlignment="Top" Foreground="#FF333333" BorderThickness="2,2,2,2"
+                                                  HorizontalAlignment="Left" Margin="0,0,10,0"
+                                                  ToolTip="{DynamicResource Tab1.Page7.RandomBullet.Tooltip}" />
+                                    </WrapPanel>
                                 </StackPanel>
                             </Expander>
                         </StackPanel>
