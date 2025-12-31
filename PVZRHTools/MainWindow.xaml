@@ -199,6 +199,11 @@
                                               Height="21" Foreground="#FF333333" BorderThickness="2,2,2,2"
                                               IsChecked="{Binding PvPPotRange}" Margin="10,0,0,0"
                                               VerticalAlignment="Top" />
+                                    <CheckBox x:Name="RandomUpgradeMode" Content="{DynamicResource Tab1.Page7.RandomUpgradeMode}"
+                                              Height="21" Foreground="#FF333333" BorderThickness="2,2,2,2"
+                                              IsChecked="{Binding RandomUpgradeMode}" Margin="10,0,0,0"
+                                              VerticalAlignment="Top"
+                                              ToolTip="{DynamicResource Tab1.Page7.RandomUpgradeMode.Tooltip}" />
                                 </StackPanel>
                                 <hc:ElementGroup Orientation="Horizontal" Layout="Stack" Width="552"
                                                  HorizontalAlignment="Left" Style="{DynamicResource ElementGroupSolid}"

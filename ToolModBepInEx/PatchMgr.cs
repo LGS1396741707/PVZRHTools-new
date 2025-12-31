@@ -3681,6 +3681,11 @@ public class PatchMgr : MonoBehaviour
     public static bool RandomBullet { get; set; } = false;
 
     /// <summary>
+    /// 随机升级模式 - 点击植物操控(WASD移动)
+    /// </summary>
+    public static bool RandomUpgradeMode { get; set; } = false;
+
+    /// <summary>
     /// 记录僵尸最后受到伤害的植物类型，用于击杀升级功能
     /// </summary>
     public static Dictionary<int, PlantType> ZombieLastDamageSource { get; set; } = new Dictionary<int, PlantType>();
@@ -3786,6 +3791,56 @@ public class PatchMgr : MonoBehaviour
                                 }
                             }
                         }
+                    }
+                }
+            }
+            catch { }
+
+            // 随机升级模式 - 点击植物操控，R键切换僵尸显血
+            try
+            {
+                if (RandomUpgradeMode && Board.Instance != null && Mouse.Instance != null)
+                {
+                    // 左键点击植物来操控，再次点击同一植物则停止操控
+                    if (Input.GetMouseButtonDown(0))
+                    {
+                        int column = Mouse.Instance.theMouseColumn;
+                        int row = Mouse.Instance.theMouseRow;
+                        
+                        var plants = Lawnf.Get1x1Plants(column, row);
+                        if (plants != null && plants.Count > 0)
+                        {
+                            var plant = plants[0];
+                            if (plant != null)
+                            {
+                                // 如果点击的是当前操控的植物，则停止操控
+                                if (Board.Instance.controledPlant == plant)
+                                {
+                                    Board.Instance.controledPlant = null;
+                                }
+                                else
+                                {
+                                    // 设置为操控植物
+                                    Board.Instance.controledPlant = plant;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 方向键移动操控的植物
+                    if (Board.Instance.controledPlant != null)
+                    {
+                        var plant = Board.Instance.controledPlant;
+                        float moveSpeed = 3f * Time.deltaTime * 100f;
+                        
+                        if (Input.GetKey(KeyCode.UpArrow))
+                            plant.transform.position += new Vector3(0, moveSpeed, 0);
+                        if (Input.GetKey(KeyCode.DownArrow))
+                            plant.transform.position -= new Vector3(0, moveSpeed, 0);
+                        if (Input.GetKey(KeyCode.LeftArrow))
+                            plant.transform.position -= new Vector3(moveSpeed, 0, 0);
+                        if (Input.GetKey(KeyCode.RightArrow))
+                            plant.transform.position += new Vector3(moveSpeed, 0, 0);
                     }
                 }
             }

@@ -1093,6 +1093,10 @@ public partial class ModifierViewModel : ObservableObject
     {
         App.DataSync.Value.SendData(new BasicProperties { RandomBullet = value });
     }
+    partial void OnRandomUpgradeModeChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { RandomUpgradeMode = value });
+    }
     partial void OnCobCannonNoCDChanged(bool value)
     {
         App.DataSync.Value.SendData(new BasicProperties { CobCannonNoCD = value });
@@ -1611,6 +1615,7 @@ public partial class ModifierViewModel : ObservableObject
     [ObservableProperty] public partial bool RandomCard { get; set; }
     [ObservableProperty] public partial bool ColumnGlove { get; set; }
     [ObservableProperty] public partial bool RandomBullet { get; set; }
+    [ObservableProperty] public partial bool RandomUpgradeMode { get; set; }
 
     [ObservableProperty] public partial bool ClearOnWritingField { get; set; }
 

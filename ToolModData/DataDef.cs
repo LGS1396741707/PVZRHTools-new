@@ -101,6 +101,11 @@ public struct BasicProperties : ISyncData
     /// 随机子弹 - 植物发射的子弹类型随机
     /// </summary>
     public bool? RandomBullet { get; set; }
+
+    /// <summary>
+    /// 随机升级模式 - 点击植物操控，手套点击自己升级，融合重置等级返还阳光
+    /// </summary>
+    public bool? RandomUpgradeMode { get; set; }
 }
 
 [Serializable]
