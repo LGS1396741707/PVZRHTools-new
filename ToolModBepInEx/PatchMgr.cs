@@ -3834,7 +3834,7 @@ public class PatchMgr : MonoBehaviour
                 foreach (var j in SeaTypes)
                 {
                     if (j < 0) continue;
-                    for (var i = 0; i < Board.Instance!.rowNum; i++) CreateZombie.Instance.SetZombie(i, (ZombieType)j, 11f);
+                    for (var i = 0; i < Board.Instance!.rowNum; i++) CreateZombie.Instance!.SetZombie(i, (ZombieType)j, 11f);
                 }
 
                 seaTime = 0;

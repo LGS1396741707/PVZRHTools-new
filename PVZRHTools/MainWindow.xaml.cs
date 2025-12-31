@@ -106,6 +106,12 @@ namespace PVZRHTools
             // 播放 OS 风格启动动画
             WindowAnimations.PlayStartupAnimation(this);
             
+            // 添加窗口状态变化动画（最小化/还原/最大化）
+            WindowAnimations.AddWindowStateAnimation(this);
+            
+            // 添加窗口拖动倾斜效果
+            AdvancedAnimations.AddWindowDragTilt(this);
+            
             // 尝试启用 Windows 11 云母效果（如果可用）
             if (AcrylicHelper.IsWindows11OrNewer())
             {
@@ -219,6 +225,19 @@ namespace PVZRHTools
                 if (child is FrameworkElement element && element.ToolTip is ToolTip toolTip)
                 {
                     ControlAnimations.AddToolTipAnimation(toolTip);
+                }
+                
+                // 为 ProgressBar 添加流光效果
+                if (child is ProgressBar progressBar)
+                {
+                    AdvancedAnimations.AddProgressBarShimmer(progressBar);
+                }
+                
+                // 为重要按钮添加磁吸效果（可选，根据按钮名称判断）
+                if (child is Button btn && btn.Name != null && 
+                    (btn.Name.Contains("Important") || btn.Name.Contains("Main") || btn.Name.Contains("Primary")))
+                {
+                    AdvancedAnimations.AddMagneticEffect(btn, 0.1);
                 }
                 
                 // 递归处理子元素
