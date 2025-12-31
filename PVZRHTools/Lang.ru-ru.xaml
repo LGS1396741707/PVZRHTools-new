@@ -191,6 +191,7 @@
     <s:String x:Key="Tab2.Page1.ConveyBeltModify">Типы конвейерной ленты</s:String>
     <s:String x:Key="Tab1.Page5.JachsonSummonType">Тип призыва прыгуна</s:String>
     <s:String x:Key="Tab1.Page6.PlantUpgrade">Улучшение растений</s:String>
+    <s:String x:Key="Tab1.Page6.PlantUpgrade.Tooltip">Правый клик по растению на поле для улучшения на один уровень (максимум 3 уровень)</s:String>
     <s:String x:Key="Tab2.Page2.BuffRefreshNoLimit">Без ограничения обновления баффов</s:String>
     <s:String x:Key="Tab2.Page1.VaseLineUp">Расстановка ваз</s:String>
 </ResourceDictionary>

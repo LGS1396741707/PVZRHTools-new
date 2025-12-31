@@ -517,26 +517,6 @@ public partial class ModifierViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public void GardenTools()
-    {
-        try
-        {
-            Process modifier = new();
-            ProcessStartInfo info = new()
-            {
-                FileName = "PVZRHTools\\GardenTools\\start.bat",
-                UseShellExecute = false,
-                RedirectStandardOutput = true
-            };
-            modifier.StartInfo = info;
-            modifier.Start();
-        }
-        catch
-        {
-        }
-    }
-
-    [RelayCommand]
     public void Health1st()
     {
         App.DataSync.Value.SendData(new ValueProperties

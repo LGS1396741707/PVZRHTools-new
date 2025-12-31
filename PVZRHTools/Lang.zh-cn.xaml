@@ -204,12 +204,12 @@
     <s:String x:Key="Tab2.Page1.ConveyBeltModify">传送带植物类型，重进关卡生效</s:String>
     <s:String x:Key="Tab1.Page5.JachsonSummonType">舞王撑杆召唤僵尸类型</s:String>
     <s:String x:Key="Tab1.Page6.PlantUpgrade">植物升级</s:String>
+    <s:String x:Key="Tab1.Page6.PlantUpgrade.Tooltip">启用后右键点击场上植物可使其升一级（最高3级）</s:String>
     <s:String x:Key="Tab1.Page6.SuperStarNoCD">超桃无CD</s:String>
     <s:String x:Key="Tab1.Page6.LockWheatPlant">锁定大麦变植</s:String>
     <s:String x:Key="Tab2.Page2.BuffRefreshNoLimit">无限刷新和积分</s:String>
     <s:String x:Key="Tab2.Page1.VaseLineUp">罐子布阵：</s:String>
     <s:String x:Key="Tab0.AbyssCheat">深渊作弊</s:String>
-    <s:String x:Key="Tab0.GardenTools">花园修改器（打开较慢，别急）</s:String>
     <s:String x:Key="Tab0.LoadCustomPlantData">加载自定义植物数值表</s:String>
     <s:String x:Key="Tab0.LoadCustomPlantData.Tooltip">由于代码限制，无法保证所有条目均能生效</s:String>
     <s:String x:Key="Tab2.SetZombieIdle">僵尸全员站桩</s:String>

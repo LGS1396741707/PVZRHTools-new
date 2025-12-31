@@ -160,8 +160,6 @@
                                                       Value="{Binding GameSpeed,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
                                                       Increment="0.1" Minimum="0" SelectionOpacity="0.1" Maximum="16"
                                                       Style="{DynamicResource NumericUpDownExtend}" />
-                                    <Button x:Name="GardenTools" Content="{DynamicResource Tab0.GardenTools}"
-                                            Command="{Binding GardenToolsCommand}" Margin="10,0,0,0" />
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal">
                                     <Label Content="{DynamicResource Tab2.Page2.Header}" HorizontalAlignment="Left"
@@ -637,7 +635,8 @@
                                         <CheckBox x:Name="PlantUpgrade" IsChecked="{Binding PlantUpgrade}"
                                                   Content="{DynamicResource Tab1.Page6.PlantUpgrade}" Height="21"
                                                   VerticalAlignment="Top" Foreground="#FF333333" BorderThickness="2,2,2,2"
-                                                  Margin="0,0,10,0" Width="72" RenderTransformOrigin="0.5,0.5">
+                                                  Margin="0,0,10,0" Width="72" RenderTransformOrigin="0.5,0.5"
+                                                  ToolTip="{DynamicResource Tab1.Page6.PlantUpgrade.Tooltip}">
                                             <CheckBox.RenderTransform>
                                                 <TransformGroup>
                                                     <ScaleTransform />

@@ -3743,6 +3743,38 @@ public class PatchMgr : MonoBehaviour
             }
             catch { }
 
+            // 植物升级功能 - 右键点击场上植物升级
+            try
+            {
+                if (PlantUpgrade && Board.Instance != null && Mouse.Instance != null)
+                {
+                    // 检测鼠标右键点击
+                    if (Input.GetMouseButtonDown(1))
+                    {
+                        // 获取鼠标所在格子的植物
+                        int column = Mouse.Instance.theMouseColumn;
+                        int row = Mouse.Instance.theMouseRow;
+                        
+                        // 使用 Lawnf.Get1x1Plants 获取该格子的所有植物
+                        var plants = Lawnf.Get1x1Plants(column, row);
+                        if (plants != null && plants.Count > 0)
+                        {
+                            // 遍历该格子的植物，找到可以升级的植物
+                            foreach (var plant in plants)
+                            {
+                                if (plant != null && plant.theLevel < 3)
+                                {
+                                    // 升级植物
+                                    plant.Upgrade(plant.theLevel + 1, true, false);
+                                    break; // 只升级一个植物
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+
             // 图鉴放置功能 - 独立try块，确保在任何关卡都能正常工作
             try
             {

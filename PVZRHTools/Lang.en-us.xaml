@@ -195,10 +195,10 @@
     <s:String x:Key="Tab2.Page1.ConveyBeltModify">ConveyBeltTypes</s:String>
     <s:String x:Key="Tab1.Page5.JachsonSummonType">PolevaulterSummonType</s:String>
     <s:String x:Key="Tab1.Page6.PlantUpgrade">PlantUpgrade</s:String>
+    <s:String x:Key="Tab1.Page6.PlantUpgrade.Tooltip">Right-click on a plant to upgrade it by one level (max level 3)</s:String>
     <s:String x:Key="Tab2.Page2.BuffRefreshNoLimit">BuffRefreshNoLimit</s:String>
     <s:String x:Key="Tab2.Page1.VaseLineUp">VaseLineUp</s:String>
     <s:String x:Key="Tab0.AbyssCheat">AbyssCheat</s:String>
-    <s:String x:Key="Tab0.GardenTools">GardenTools by @听雨夜荷</s:String>
     <s:String x:Key="Tab0.LoadCustomPlantData">LoadCustomPlantData</s:String>
     <s:String x:Key="Tab0.LoadCustomPlantData.Tooltip">Due to code limits, some settings may not be effective.</s:String>
     <s:String x:Key="Tab2.SetZombieIdle">SetZombiesIdle</s:String>
