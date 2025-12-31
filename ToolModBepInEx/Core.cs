@@ -28,7 +28,7 @@ using Object = UnityEngine.Object;
 
 namespace ToolModBepInEx
 {
-    [HarmonyPatch(typeof(NoticeMenu), "Awake")]
+    [HarmonyPatch(typeof(NoticeMenu), "Start")]
     public static class Help_Patch
     {
         public static void Postfix()
