@@ -255,6 +255,16 @@ public class DataProcessor : MonoBehaviour
             if (p1.UnlockRedCardPlants is not null) UnlockRedCardPlants = (bool)p1.UnlockRedCardPlants;
             if (p1.KillUpgrade is not null) KillUpgrade = (bool)p1.KillUpgrade;
             if (p1.ZombieImmuneAllDebuffs is not null) ZombieImmuneAllDebuffs = (bool)p1.ZombieImmuneAllDebuffs;
+            // 僵尸免疫效果 - 分开的9个开关
+            if (p1.ZombieImmuneFreeze is not null) ZombieImmuneFreeze = (bool)p1.ZombieImmuneFreeze;
+            if (p1.ZombieImmuneCold is not null) ZombieImmuneCold = (bool)p1.ZombieImmuneCold;
+            if (p1.ZombieImmuneButter is not null) ZombieImmuneButter = (bool)p1.ZombieImmuneButter;
+            if (p1.ZombieImmunePoison is not null) ZombieImmunePoison = (bool)p1.ZombieImmunePoison;
+            if (p1.ZombieImmuneJalaed is not null) ZombieImmuneJalaed = (bool)p1.ZombieImmuneJalaed;
+            if (p1.ZombieImmuneEmbered is not null) ZombieImmuneEmbered = (bool)p1.ZombieImmuneEmbered;
+            if (p1.ZombieImmuneKnockback is not null) ZombieImmuneKnockback = (bool)p1.ZombieImmuneKnockback;
+            if (p1.ZombieImmuneMindControl is not null) ZombieImmuneMindControl = (bool)p1.ZombieImmuneMindControl;
+            if (p1.ZombieImmuneDevour is not null) ZombieImmuneDevour = (bool)p1.ZombieImmuneDevour;
             if (p1.RandomBullet is not null) RandomBullet = (bool)p1.RandomBullet;
             if (p1.RandomUpgradeMode is not null) RandomUpgradeMode = (bool)p1.RandomUpgradeMode;
             return;
@@ -312,7 +322,9 @@ public class DataProcessor : MonoBehaviour
 
             if (iga.NoFail is not null) EnableAll<GameLose>(!(bool)iga.NoFail);
             if (iga.BuffRefreshNoLimit is not null) BuffRefreshNoLimit = (bool)iga.BuffRefreshNoLimit;
-            if (iga.BuffRefreshNoLimit is true)
+            if (iga.UnlimitedRefresh is not null) UnlimitedRefresh = (bool)iga.UnlimitedRefresh;
+            if (iga.UnlimitedScore is not null) UnlimitedScore = (bool)iga.UnlimitedScore;
+            if (iga.BuffRefreshNoLimit is true || iga.UnlimitedScore is true)
             {
                 if (FruitNinjaManager.Instance != null)
                     FruitNinjaManager.Instance.AddScore(114514);

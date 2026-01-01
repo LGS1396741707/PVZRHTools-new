@@ -4,6 +4,8 @@
 public struct ModifierSaveModel
 {
     public bool BuffRefreshNoLimit { get; set; }
+    public bool UnlimitedRefresh { get; set; }
+    public bool UnlimitedScore { get; set; }
     public bool CardNoInit { get; set; }
     public bool ChomperNoCD { get; set; }
     public bool SuperStarNoCD { get; set; }

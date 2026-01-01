@@ -2122,8 +2122,8 @@ public static class BoardUpdateCursePatch
     {
         try
         {
-            // 处理无限积分
-            if (BuffRefreshNoLimit && __instance != null)
+            // 处理无限积分（使用新的独立开关或旧的兼容开关）
+            if ((UnlimitedScore || BuffRefreshNoLimit) && __instance != null)
             {
                 __instance.thePoints = 999999f;
             }
@@ -2531,10 +2531,14 @@ public static class ZombieSetPoisonCoexistPatch
 /// <summary>
 /// 僵尸状态并存补丁 - Zombie.SetJalaed (红温状态)
 /// 当启用状态并存时，完全阻止原方法执行，手动设置红温状态以保留寒冷状态
+/// 同时手动应用红温视觉效果
 /// </summary>
 [HarmonyPatch(typeof(Zombie), nameof(Zombie.SetJalaed))]
 public static class ZombieSetJalaedCoexistPatch
 {
+    // 红温颜色 (橙红色)
+    private static readonly Color JalaedColor = new Color(1f, 0.5f, 0.2f, 1f);
+    
     [HarmonyPrefix]
     public static bool Prefix(Zombie __instance)
     {
@@ -2547,8 +2551,8 @@ public static class ZombieSetJalaedCoexistPatch
             // 手动设置红温状态，不调用原方法（原方法会清除寒冷状态）
             __instance.isJalaed = true;
             
-            // 原方法还会设置 isEmbered = false，我们也需要做这个
-            // 但为了状态并存，我们不清除 isEmbered
+            // 手动应用红温视觉效果
+            ApplyJalaedVisual(__instance);
             
             return false; // 阻止原方法执行
         }
@@ -2557,15 +2561,42 @@ public static class ZombieSetJalaedCoexistPatch
             return true; // 出错时执行原方法
         }
     }
+    
+    /// <summary>
+    /// 应用红温视觉效果
+    /// </summary>
+    private static void ApplyJalaedVisual(Zombie zombie)
+    {
+        try
+        {
+            // 获取僵尸的所有 SpriteRenderer 并设置红温颜色
+            var spriteRenderers = zombie.GetComponentsInChildren<SpriteRenderer>();
+            if (spriteRenderers != null)
+            {
+                foreach (var sr in spriteRenderers)
+                {
+                    if (sr != null)
+                    {
+                        sr.color = JalaedColor;
+                    }
+                }
+            }
+        }
+        catch { }
+    }
 }
 
 /// <summary>
 /// 僵尸状态并存补丁 - Zombie.SetEmbered (余烬状态)
 /// 当启用状态并存时，完全阻止原方法执行，手动设置余烬状态以保留寒冷状态
+/// 同时手动应用余烬视觉效果
 /// </summary>
 [HarmonyPatch(typeof(Zombie), nameof(Zombie.SetEmbered))]
 public static class ZombieSetEmberedCoexistPatch
 {
+    // 余烬颜色 (深红色/暗红色)
+    private static readonly Color EmberedColor = new Color(0.8f, 0.3f, 0.1f, 1f);
+    
     [HarmonyPrefix]
     public static bool Prefix(Zombie __instance)
     {
@@ -2578,12 +2609,38 @@ public static class ZombieSetEmberedCoexistPatch
             // 手动设置余烬状态，不调用原方法（原方法会清除寒冷状态）
             __instance.isEmbered = true;
             
+            // 手动应用余烬视觉效果
+            ApplyEmberedVisual(__instance);
+            
             return false; // 阻止原方法执行
         }
         catch 
         { 
             return true; // 出错时执行原方法
         }
+    }
+    
+    /// <summary>
+    /// 应用余烬视觉效果
+    /// </summary>
+    private static void ApplyEmberedVisual(Zombie zombie)
+    {
+        try
+        {
+            // 获取僵尸的所有 SpriteRenderer 并设置余烬颜色
+            var spriteRenderers = zombie.GetComponentsInChildren<SpriteRenderer>();
+            if (spriteRenderers != null)
+            {
+                foreach (var sr in spriteRenderers)
+                {
+                    if (sr != null)
+                    {
+                        sr.color = EmberedColor;
+                    }
+                }
+            }
+        }
+        catch { }
     }
 }
 
@@ -2844,7 +2901,7 @@ public static class TravelRefreshPatch
 {
     public static void Postfix(TravelRefresh __instance)
     {
-        if (BuffRefreshNoLimit) __instance.refreshTimes = 2147483647;
+        if (UnlimitedRefresh || BuffRefreshNoLimit) __instance.refreshTimes = 2147483647;
     }
 }
 
@@ -2853,7 +2910,7 @@ public static class TravelStorePatch
 {
     public static void Postfix(TravelStore __instance)
     {
-        if (BuffRefreshNoLimit) __instance.count = 0;
+        if (UnlimitedRefresh || BuffRefreshNoLimit) __instance.count = 0;
     }
 }
 
@@ -2863,7 +2920,7 @@ public static class ShootingMenuPatch
     [HarmonyPostfix]
     public static void Postfix()
     {
-        if (BuffRefreshNoLimit) ShootingManager.Instance.refreshCount = 2147483647;
+        if (UnlimitedRefresh || BuffRefreshNoLimit) ShootingManager.Instance.refreshCount = 2147483647;
     }
 }
 [HarmonyPatch(typeof(FruitNinjaManager),nameof(FruitNinjaManager.LoseScore))]
@@ -2872,7 +2929,7 @@ public static class FruitNinjaManagerPatch
     [HarmonyPrefix]
     public static void Postfix(ref float value)
     {
-        if (BuffRefreshNoLimit) value = -1e-10f;
+        if (UnlimitedScore || BuffRefreshNoLimit) value = -1e-10f;
     }
 }
 [HarmonyPatch(typeof(FruitObject), nameof(FruitObject.FixedUpdate))]
@@ -3287,7 +3344,7 @@ public static class ZombieImmuneSetMindControlPatch
     [HarmonyPriority(Priority.High)]
     public static bool Prefix(Zombie __instance)
     {
-        if (!ZombieImmuneAllDebuffs) return true;
+        if (!ZombieImmuneAllDebuffs && !ZombieImmuneMindControl) return true;
         try
         {
             if (__instance == null) return true;
@@ -3308,7 +3365,7 @@ public static class ZombieImmuneSetFreezePatch
     [HarmonyPriority(Priority.High)]
     public static bool Prefix(Zombie __instance)
     {
-        if (!ZombieImmuneAllDebuffs) return true;
+        if (!ZombieImmuneAllDebuffs && !ZombieImmuneFreeze) return true;
         try
         {
             if (__instance == null) return true;
@@ -3329,7 +3386,7 @@ public static class ZombieImmuneSetColdPatch
     [HarmonyPriority(Priority.High)]
     public static bool Prefix(Zombie __instance)
     {
-        if (!ZombieImmuneAllDebuffs) return true;
+        if (!ZombieImmuneAllDebuffs && !ZombieImmuneCold) return true;
         try
         {
             if (__instance == null) return true;
@@ -3350,7 +3407,7 @@ public static class ZombieImmuneButteredPatch
     [HarmonyPriority(Priority.High)]
     public static bool Prefix(Zombie __instance)
     {
-        if (!ZombieImmuneAllDebuffs) return true;
+        if (!ZombieImmuneAllDebuffs && !ZombieImmuneButter) return true;
         try
         {
             if (__instance == null) return true;
@@ -3371,7 +3428,7 @@ public static class ZombieImmuneSetPoisonPatch
     [HarmonyPriority(Priority.High)]
     public static bool Prefix(Zombie __instance)
     {
-        if (!ZombieImmuneAllDebuffs) return true;
+        if (!ZombieImmuneAllDebuffs && !ZombieImmunePoison) return true;
         try
         {
             if (__instance == null) return true;
@@ -3392,7 +3449,7 @@ public static class ZombieImmuneAddPoisonLevelPatch
     [HarmonyPriority(Priority.High)]
     public static bool Prefix(Zombie __instance)
     {
-        if (!ZombieImmuneAllDebuffs) return true;
+        if (!ZombieImmuneAllDebuffs && !ZombieImmunePoison) return true;
         try
         {
             if (__instance == null) return true;
@@ -3413,7 +3470,7 @@ public static class ZombieImmuneEatGarlicPatch
     [HarmonyPriority(Priority.High)]
     public static bool Prefix(Zombie __instance)
     {
-        if (!ZombieImmuneAllDebuffs) return true;
+        if (!ZombieImmuneAllDebuffs && !ZombieImmunePoison) return true;
         try
         {
             if (__instance == null) return true;
@@ -3434,7 +3491,7 @@ public static class ZombieImmuneGarlicedPatch
     [HarmonyPriority(Priority.High)]
     public static bool Prefix(Zombie __instance)
     {
-        if (!ZombieImmuneAllDebuffs) return true;
+        if (!ZombieImmuneAllDebuffs && !ZombieImmunePoison) return true;
         try
         {
             if (__instance == null) return true;
@@ -3455,7 +3512,7 @@ public static class ZombieImmuneKnockBackPatch
     [HarmonyPriority(Priority.High)]
     public static bool Prefix(Zombie __instance)
     {
-        if (!ZombieImmuneAllDebuffs) return true;
+        if (!ZombieImmuneAllDebuffs && !ZombieImmuneKnockback) return true;
         try
         {
             if (__instance == null) return true;
@@ -3476,7 +3533,7 @@ public static class ZombieImmuneSetJalaedPatch
     [HarmonyPriority(Priority.High)]
     public static bool Prefix(Zombie __instance)
     {
-        if (!ZombieImmuneAllDebuffs) return true;
+        if (!ZombieImmuneAllDebuffs && !ZombieImmuneJalaed) return true;
         try
         {
             if (__instance == null) return true;
@@ -3497,7 +3554,7 @@ public static class ZombieImmuneSetEmberedPatch
     [HarmonyPriority(Priority.High)]
     public static bool Prefix(Zombie __instance)
     {
-        if (!ZombieImmuneAllDebuffs) return true;
+        if (!ZombieImmuneAllDebuffs && !ZombieImmuneEmbered) return true;
         try
         {
             if (__instance == null) return true;
@@ -3518,7 +3575,7 @@ public static class ZombieImmuneChomperChompPatch
     [HarmonyPrefix]
     public static bool Prefix(Chomper __instance, Zombie zombie)
     {
-        if (!ZombieImmuneAllDebuffs) return true;
+        if (!ZombieImmuneAllDebuffs && !ZombieImmuneDevour) return true;
         try
         {
             if (__instance == null || zombie == null) return true;
@@ -3559,6 +3616,10 @@ public class PatchMgr : MonoBehaviour
     public static int AlmanacSeedType { get; set; } = -1;
     public static ZombieType AlmanacZombieType { get; set; } = ZombieType.Nothing;
     public static bool BuffRefreshNoLimit { get; set; } = false;
+    /// <summary>无限刷新 - 旅行词条/诸神进化无限刷新</summary>
+    public static bool UnlimitedRefresh { get; set; } = false;
+    /// <summary>无限积分 - 水果忍者无限积分</summary>
+    public static bool UnlimitedScore { get; set; } = false;
     public static Dictionary<BulletType, int> BulletDamage { get; set; } = [];
     public static bool CardNoInit { get; set; } = false;
     public static bool ChomperNoCD { get; set; } = false;
@@ -3688,9 +3749,29 @@ public class PatchMgr : MonoBehaviour
     public static bool KillUpgrade { get; set; } = false;
 
     /// <summary>
-    /// 僵尸免疫一切负面效果 - 免疫负面buff、击退、吞噬、魅惑等
+    /// 僵尸免疫一切负面效果 - 免疫负面buff、击退、吞噬、魅惑等（已弃用，保留兼容）
     /// </summary>
     public static bool ZombieImmuneAllDebuffs { get; set; } = false;
+
+    // 僵尸免疫效果 - 分开的9个开关
+    /// <summary>僵尸免疫冻结</summary>
+    public static bool ZombieImmuneFreeze { get; set; } = false;
+    /// <summary>僵尸免疫减速</summary>
+    public static bool ZombieImmuneCold { get; set; } = false;
+    /// <summary>僵尸免疫黄油定身</summary>
+    public static bool ZombieImmuneButter { get; set; } = false;
+    /// <summary>僵尸免疫蒜毒</summary>
+    public static bool ZombieImmunePoison { get; set; } = false;
+    /// <summary>僵尸免疫红温</summary>
+    public static bool ZombieImmuneJalaed { get; set; } = false;
+    /// <summary>僵尸免疫余烬</summary>
+    public static bool ZombieImmuneEmbered { get; set; } = false;
+    /// <summary>僵尸免疫击退</summary>
+    public static bool ZombieImmuneKnockback { get; set; } = false;
+    /// <summary>僵尸免疫魅惑</summary>
+    public static bool ZombieImmuneMindControl { get; set; } = false;
+    /// <summary>僵尸免疫吞噬</summary>
+    public static bool ZombieImmuneDevour { get; set; } = false;
 
     /// <summary>
     /// 随机子弹 - 植物发射的子弹类型随机

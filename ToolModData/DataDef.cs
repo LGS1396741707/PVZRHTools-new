@@ -93,9 +93,29 @@ public struct BasicProperties : ISyncData
     public bool? KillUpgrade { get; set; }
 
     /// <summary>
-    /// 僵尸免疫一切负面效果 - 免疫负面buff、击退、吞噬、魅惑等
+    /// 僵尸免疫一切负面效果 - 免疫负面buff、击退、吞噬、魅惑等（已弃用，保留兼容）
     /// </summary>
     public bool? ZombieImmuneAllDebuffs { get; set; }
+
+    // 僵尸免疫效果 - 分开的9个开关
+    /// <summary>僵尸免疫冻结</summary>
+    public bool? ZombieImmuneFreeze { get; set; }
+    /// <summary>僵尸免疫减速</summary>
+    public bool? ZombieImmuneCold { get; set; }
+    /// <summary>僵尸免疫黄油定身</summary>
+    public bool? ZombieImmuneButter { get; set; }
+    /// <summary>僵尸免疫蒜毒</summary>
+    public bool? ZombieImmunePoison { get; set; }
+    /// <summary>僵尸免疫红温</summary>
+    public bool? ZombieImmuneJalaed { get; set; }
+    /// <summary>僵尸免疫余烬</summary>
+    public bool? ZombieImmuneEmbered { get; set; }
+    /// <summary>僵尸免疫击退</summary>
+    public bool? ZombieImmuneKnockback { get; set; }
+    /// <summary>僵尸免疫魅惑</summary>
+    public bool? ZombieImmuneMindControl { get; set; }
+    /// <summary>僵尸免疫吞噬</summary>
+    public bool? ZombieImmuneDevour { get; set; }
 
     /// <summary>
     /// 随机子弹 - 植物发射的子弹类型随机
@@ -140,6 +160,10 @@ public struct InGameActions : ISyncData
     public bool? PvE { get; set; }
     public bool? AbyssCheat { get; set; }
     public bool? BuffRefreshNoLimit { get; set; }
+    /// <summary>无限刷新 - 旅行词条/诸神进化无限刷新</summary>
+    public bool? UnlimitedRefresh { get; set; }
+    /// <summary>无限积分 - 水果忍者无限积分</summary>
+    public bool? UnlimitedScore { get; set; }
     public bool? Card { get; set; }
     public string? ChangeLevelName { get; set; }
     public bool? ClearAllHoles { get; set; }

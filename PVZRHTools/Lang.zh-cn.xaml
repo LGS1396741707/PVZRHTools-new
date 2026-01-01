@@ -44,6 +44,16 @@
     <s:String x:Key="Tab1.Page6_5.ZombieStatusCoexist.Tooltip">启用后僵尸的红温（火焰）状态可与寒冰、蒜毒状态同时存在，不再互斥</s:String>
     <s:String x:Key="Tab1.Page6_5.ZombieImmuneAllDebuffs">僵尸免疫一切负面效果</s:String>
     <s:String x:Key="Tab1.Page6_5.ZombieImmuneAllDebuffs.Tooltip">启用后僵尸免疫所有负面效果，包括：冻结、减速、黄油定身、中毒、红温、余烬、击退、魅惑、吞噬、蒜毒等</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmune.GroupHeader">僵尸免疫效果</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneFreeze">冻结</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneCold">减速</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneButter">黄油定身</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmunePoison">蒜毒</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneJalaed">红温</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneEmbered">余烬</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneKnockback">击退</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneMindControl">魅惑</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneDevour">吞噬</s:String>
     <s:String x:Key="Tab1.Page7.Header">其他特性</s:String>
     <s:String x:Key="Tab1.Description">此修改器完全免费且已在github开源。若有付费/要求三连+关注/私信发链接的情况，说明你被骗了，请注意隐私和财产安全！</s:String>
     <s:String x:Key="Tab1.Page1.DevMode">开发者模式</s:String>
@@ -216,6 +226,8 @@
     <s:String x:Key="Tab1.Page6.SuperStarNoCD">超桃无CD</s:String>
     <s:String x:Key="Tab1.Page6.LockWheatPlant">锁定大麦变植</s:String>
     <s:String x:Key="Tab2.Page2.BuffRefreshNoLimit">无限刷新和积分</s:String>
+    <s:String x:Key="Tab2.Page2.UnlimitedRefresh">无限刷新</s:String>
+    <s:String x:Key="Tab2.Page2.UnlimitedScore">无限积分</s:String>
     <s:String x:Key="Tab2.Page1.VaseLineUp">罐子布阵：</s:String>
     <s:String x:Key="Tab0.AbyssCheat">深渊作弊</s:String>
     <s:String x:Key="Tab0.LoadCustomPlantData">加载自定义植物数值表</s:String>

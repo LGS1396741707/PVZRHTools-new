@@ -232,6 +232,8 @@ public partial class ModifierViewModel : ObservableObject
         InGameBuffs = [];
         InGameDebuffs = [];
         BuffRefreshNoLimit = s.BuffRefreshNoLimit;
+        UnlimitedRefresh = s.UnlimitedRefresh;
+        UnlimitedScore = s.UnlimitedScore;
         CardNoInit = s.CardNoInit;
         ChomperNoCD = s.ChomperNoCD;
         SuperStarNoCD = s.SuperStarNoCD;
@@ -676,6 +678,8 @@ public partial class ModifierViewModel : ObservableObject
         ModifierSaveModel s = new()
         {
             BuffRefreshNoLimit = BuffRefreshNoLimit,
+            UnlimitedRefresh = UnlimitedRefresh,
+            UnlimitedScore = UnlimitedScore,
             CardNoInit = CardNoInit,
             ChomperNoCD = ChomperNoCD,
             SuperStarNoCD = SuperStarNoCD,
@@ -1063,6 +1067,16 @@ public partial class ModifierViewModel : ObservableObject
         App.DataSync.Value.SendData(new InGameActions { BuffRefreshNoLimit = value });
     }
 
+    partial void OnUnlimitedRefreshChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new InGameActions { UnlimitedRefresh = value });
+    }
+
+    partial void OnUnlimitedScoreChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new InGameActions { UnlimitedScore = value });
+    }
+
     partial void OnCardNoInitChanged(bool value)
     {
         App.DataSync.Value.SendData(new BasicProperties { CardNoInit = value });
@@ -1385,6 +1399,52 @@ public partial class ModifierViewModel : ObservableObject
         App.DataSync.Value.SendData(new BasicProperties { ZombieImmuneAllDebuffs = value });
     }
 
+    // 僵尸免疫效果 - 分开的9个开关
+    partial void OnZombieImmuneFreezeChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { ZombieImmuneFreeze = value });
+    }
+
+    partial void OnZombieImmuneColdChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { ZombieImmuneCold = value });
+    }
+
+    partial void OnZombieImmuneButterChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { ZombieImmuneButter = value });
+    }
+
+    partial void OnZombieImmunePoisonChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { ZombieImmunePoison = value });
+    }
+
+    partial void OnZombieImmuneJalaedChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { ZombieImmuneJalaed = value });
+    }
+
+    partial void OnZombieImmuneEmberedChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { ZombieImmuneEmbered = value });
+    }
+
+    partial void OnZombieImmuneKnockbackChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { ZombieImmuneKnockback = value });
+    }
+
+    partial void OnZombieImmuneMindControlChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { ZombieImmuneMindControl = value });
+    }
+
+    partial void OnZombieImmuneDevourChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { ZombieImmuneDevour = value });
+    }
+
     partial void OnPlantingNoCDChanged(bool value)
     {
         App.DataSync.Value.SendData(new BasicProperties { PlantingNoCD = value });
@@ -1602,6 +1662,10 @@ public partial class ModifierViewModel : ObservableObject
 
     [ObservableProperty] public partial bool BuffRefreshNoLimit { get; set; }
 
+    [ObservableProperty] public partial bool UnlimitedRefresh { get; set; }
+
+    [ObservableProperty] public partial bool UnlimitedScore { get; set; }
+
     [ObservableProperty] public partial int BulletDamageType { get; set; }
 
     [ObservableProperty] public partial double BulletDamageValue { get; set; }
@@ -1783,6 +1847,17 @@ public partial class ModifierViewModel : ObservableObject
     [ObservableProperty] public partial bool KillUpgrade { get; set; }
 
     [ObservableProperty] public partial bool ZombieImmuneAllDebuffs { get; set; }
+
+    // 僵尸免疫效果 - 分开的9个开关
+    [ObservableProperty] public partial bool ZombieImmuneFreeze { get; set; }
+    [ObservableProperty] public partial bool ZombieImmuneCold { get; set; }
+    [ObservableProperty] public partial bool ZombieImmuneButter { get; set; }
+    [ObservableProperty] public partial bool ZombieImmunePoison { get; set; }
+    [ObservableProperty] public partial bool ZombieImmuneJalaed { get; set; }
+    [ObservableProperty] public partial bool ZombieImmuneEmbered { get; set; }
+    [ObservableProperty] public partial bool ZombieImmuneKnockback { get; set; }
+    [ObservableProperty] public partial bool ZombieImmuneMindControl { get; set; }
+    [ObservableProperty] public partial bool ZombieImmuneDevour { get; set; }
 
     [ObservableProperty] public partial bool PlantingNoCD { get; set; }
 

@@ -44,6 +44,16 @@
     <s:String x:Key="Tab1.Page6_5.ZombieStatusCoexist.Tooltip">When enabled, zombie's warm (fire) status can coexist with cold and poison status instead of being mutually exclusive</s:String>
     <s:String x:Key="Tab1.Page6_5.ZombieImmuneAllDebuffs">Zombie Immune All Debuffs</s:String>
     <s:String x:Key="Tab1.Page6_5.ZombieImmuneAllDebuffs.Tooltip">When enabled, zombies are immune to all negative effects including: freeze, slow, butter stun, poison, fire, ember, knockback, mind control, swallow, garlic poison, etc.</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmune.GroupHeader">Zombie Immunity</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneFreeze">Freeze</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneCold">Slow</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneButter">Butter</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmunePoison">Poison</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneJalaed">Fire</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneEmbered">Ember</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneKnockback">Knockback</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneMindControl">MindCtrl</s:String>
+    <s:String x:Key="Tab1.Page6_5.ZombieImmuneDevour">Devour</s:String>
     <s:String x:Key="Tab1.Page7.Header">OtherProperties</s:String>
     <s:String x:Key="Tab1.Description">The modifier is completely free and is open sourced on Github. All the paid versions are pirated. All the English texts here are translated by myself instead of translating by machine and I'm sorry that my English is extremely poor.</s:String>
     <s:String x:Key="Tab1.Page1.DevMode">DevMode</s:String>
@@ -205,6 +215,8 @@
     <s:String x:Key="Tab1.Page6.PlantUpgrade">PlantUpgrade</s:String>
     <s:String x:Key="Tab1.Page6.PlantUpgrade.Tooltip">Right-click on a plant to upgrade it by one level (max level 3)</s:String>
     <s:String x:Key="Tab2.Page2.BuffRefreshNoLimit">BuffRefreshNoLimit</s:String>
+    <s:String x:Key="Tab2.Page2.UnlimitedRefresh">UnlimitedRefresh</s:String>
+    <s:String x:Key="Tab2.Page2.UnlimitedScore">UnlimitedScore</s:String>
     <s:String x:Key="Tab2.Page1.VaseLineUp">VaseLineUp</s:String>
     <s:String x:Key="Tab0.AbyssCheat">AbyssCheat</s:String>
     <s:String x:Key="Tab0.LoadCustomPlantData">LoadCustomPlantData</s:String>

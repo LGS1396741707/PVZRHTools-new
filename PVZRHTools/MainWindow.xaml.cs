@@ -257,11 +257,77 @@ namespace PVZRHTools
             e.Handled = false;
         }
 
+        // 丝滑滚动 - 小幅度 + 平滑插值
+        private readonly Dictionary<System.Windows.Controls.ScrollViewer, double> _targetOffsets = new();
+        private System.Windows.Threading.DispatcherTimer? _scrollTimer;
+
         public void ScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
             e.Handled = true;
-            var scrollViewer = (ScrollViewer)sender;
-            scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta);
+            
+            // 获取 ScrollViewer
+            System.Windows.Controls.ScrollViewer? sv = null;
+            if (sender is System.Windows.Controls.ScrollViewer scrollViewer)
+                sv = scrollViewer;
+            else if (sender is HandyControl.Controls.ScrollViewer hcScrollViewer)
+                sv = hcScrollViewer;
+            
+            if (sv == null) return;
+
+            // 初始化目标位置
+            if (!_targetOffsets.ContainsKey(sv))
+                _targetOffsets[sv] = sv.VerticalOffset;
+
+            // 小幅度滚动：e.Delta 是 120，除以 4 = 30 像素
+            double scrollAmount = e.Delta / 4.0;
+            _targetOffsets[sv] -= scrollAmount;
+            _targetOffsets[sv] = Math.Max(0, Math.Min(_targetOffsets[sv], sv.ScrollableHeight));
+
+            // 启动平滑滚动定时器
+            if (_scrollTimer == null)
+            {
+                _scrollTimer = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(16) // ~60fps
+                };
+                _scrollTimer.Tick += ScrollTimer_Tick;
+            }
+            
+            if (!_scrollTimer.IsEnabled)
+                _scrollTimer.Start();
+        }
+
+        private void ScrollTimer_Tick(object? sender, EventArgs e)
+        {
+            bool anyActive = false;
+            var toRemove = new List<System.Windows.Controls.ScrollViewer>();
+
+            foreach (var kvp in _targetOffsets.ToList())
+            {
+                var sv = kvp.Key;
+                var target = kvp.Value;
+                var current = sv.VerticalOffset;
+                var diff = target - current;
+
+                if (Math.Abs(diff) > 0.5)
+                {
+                    // 平滑插值，每帧移动 20% 的距离
+                    var newOffset = current + diff * 0.2;
+                    sv.ScrollToVerticalOffset(newOffset);
+                    anyActive = true;
+                }
+                else
+                {
+                    sv.ScrollToVerticalOffset(target);
+                    toRemove.Add(sv);
+                }
+            }
+
+            foreach (var sv in toRemove)
+                _targetOffsets.Remove(sv);
+
+            if (!anyActive)
+                _scrollTimer?.Stop();
         }
 
         public void TitleBar_PreviewMouseDown(object sender, MouseButtonEventArgs e)
