@@ -2105,6 +2105,31 @@ public static class PickaxeZombieImmunityPatch
 }
 
 /// <summary>
+/// 矿镐免疫补丁 - HypnoJalapenoPickaxeZombie.ZombieUpdate
+/// 阻止魅惑辣椒矿工挖掘植物
+/// </summary>
+[HarmonyPatch(typeof(HypnoJalapenoPickaxeZombie), nameof(HypnoJalapenoPickaxeZombie.ZombieUpdate))]
+public static class HypnoJalapenoPickaxeZombieImmunityPatch
+{
+    [HarmonyPrefix]
+    public static bool Prefix(HypnoJalapenoPickaxeZombie __instance)
+    {
+        if (!PickaxeImmunity) return true;
+        try
+        {
+            // 检查矿工是否有攻击目标
+            if (__instance?.theAttackTarget != null)
+            {
+                // 阻止挖掘任何植物
+                return false;
+            }
+        }
+        catch { }
+        return true;
+    }
+}
+
+/// <summary>
 /// 诅咒免疫补丁 - Board.Update
 /// 定期清除植物的诅咒视觉效果，并设置踩踏免疫属性
 /// 同时处理无限积分功能
@@ -2868,20 +2893,95 @@ public static class SqualourPatch
     }
 }
 
+/// <summary>
+/// 超级机枪射手无限开大补丁 - SuperSnowGatling.Update
+/// 通过设置 keepShooting = true 使植物持续保持射击状态
+/// 同时重置 timer 确保大招持续触发
+/// </summary>
 [HarmonyPatch(typeof(SuperSnowGatling), "Update")]
 public static class SuperSnowGatlingPatchA
 {
-    public static void Postfix(SuperSnowGatling __instance)
+    // 记录哪些植物被修改过（用于关闭时恢复）
+    private static HashSet<int> _modifiedPlants = new HashSet<int>();
+    // 记录哪些植物已经触发过首次射击
+    private static HashSet<int> _initializedPlants = new HashSet<int>();
+    
+    public static void Prefix(SuperSnowGatling __instance, out bool __state)
     {
-        if (!UltimateSuperGatling) return;
+        __state = false;
+        if (__instance == null) return;
+        
+        int plantId = __instance.GetInstanceID();
+        
+        if (UltimateSuperGatling)
+        {
+            try
+            {
+                __instance.keepShooting = true;
+                _modifiedPlants.Add(plantId);
+                
+                // 首次触发：植物未初始化且timer为0时，需要手动触发射击
+                if (!_initializedPlants.Contains(plantId))
+                {
+                    if (__instance.timer <= 0f)
+                    {
+                        __state = true;
+                        _initializedPlants.Add(plantId);
+                    }
+                }
+                // 后续触发：timer即将归零时触发
+                else if (__instance.timer > 0 && __instance.timer - Time.deltaTime <= 0f)
+                {
+                    __state = true;
+                }
+            }
+            catch { }
+        }
+        else
+        {
+            // 功能关闭：恢复被修改过的植物
+            if (_modifiedPlants.Contains(plantId))
+            {
+                try
+                {
+                    __instance.keepShooting = false;
+                    _modifiedPlants.Remove(plantId);
+                    _initializedPlants.Remove(plantId);
+                }
+                catch { }
+            }
+        }
+    }
+    
+    public static void Postfix(SuperSnowGatling __instance, bool __state)
+    {
+        if (!UltimateSuperGatling || __instance == null) return;
+        
         try
         {
-            if (__instance != null) __instance.timer = 0.1f;
+            __instance.timer = 0.1f;
+            if (__state && __instance.anim != null)
+            {
+                __instance.anim.SetTrigger("shoot");
+            }
         }
         catch { }
     }
+    
+    /// <summary>
+    /// 清理记录（切换关卡时调用）
+    /// </summary>
+    public static void ClearAll()
+    {
+        _modifiedPlants.Clear();
+        _initializedPlants.Clear();
+    }
 }
 
+/// <summary>
+/// 超级机枪射手无限开大补丁 - SuperSnowGatling.Shoot1
+/// 在每次射击后立即触发 AttributeEvent 重置大招状态
+/// </summary>
 [HarmonyPatch(typeof(SuperSnowGatling), "Shoot1")]
 public static class SuperSnowGatlingPatchB
 {
