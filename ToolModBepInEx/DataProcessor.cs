@@ -862,7 +862,8 @@ all");
             }
 
 
-            if (iga.NextWave is not null) Board.Instance.newZombieWaveCountDown = 0;
+            // 3.3.0版本中newZombieWaveCountDown字段已被移除
+            // if (iga.NextWave is not null) Board.Instance.newZombieWaveCountDown = 0;
 
             //感谢@高数带我飞(Github:https://github.com/LibraHp/)的植物阵容码导出和解码代码
             //现在此修改器和高数带我飞的修改器植物阵容码可以互通了

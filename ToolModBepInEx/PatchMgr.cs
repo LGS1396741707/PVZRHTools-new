@@ -113,11 +113,12 @@ public static class BoardPatchB
 {
     public static void Postfix()
     {
+        // 3.3.0版本中newZombieWaveCountDown字段已被移除，相关功能已禁用
         try
         {
-            if (NewZombieUpdateCD > 0 && NewZombieUpdateCD < 30 &&
-                Board.Instance != null && Board.Instance.newZombieWaveCountDown > NewZombieUpdateCD)
-                Board.Instance.newZombieWaveCountDown = NewZombieUpdateCD;
+            // if (NewZombieUpdateCD > 0 && NewZombieUpdateCD < 30 &&
+            //     Board.Instance != null && Board.Instance.newZombieWaveCountDown > NewZombieUpdateCD)
+            //     Board.Instance.newZombieWaveCountDown = NewZombieUpdateCD;
         }
         catch { }
     }
@@ -2841,8 +2842,9 @@ public static class ProgressMgrPatchB
             if (ShowGameInfo)
             {
                 infoChild.GameObject().active = true;
+                // 3.3.0版本中newZombieWaveCountDown字段已被移除
                 infoChild.GameObject().GetComponent<TextMeshProUGUI>().text =
-                    $"波数: {Board.Instance.theWave}/{Board.Instance.theMaxWave} 刷新CD: {Board.Instance.newZombieWaveCountDown:N1}";
+                    $"波数: {Board.Instance.theWave}/{Board.Instance.theMaxWave} 刷新CD: N/A";
             }
             else
             {

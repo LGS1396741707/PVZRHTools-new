@@ -466,24 +466,22 @@ namespace ToolModBepInEx
                         continue;
                     }
 
+                    // 3.3.0版本使用PlantDataManager替代PlantDataLoader
                     try
                     {
-                        if (PlantDataLoader.plantDatas.ContainsKey((PlantType)int.Parse(fields[0])))
+                        if (PlantDataManager.PlantData_Default != null && PlantDataManager.PlantData_Default.ContainsKey((PlantType)int.Parse(fields[0])))
                         {
-                            PlantDataLoader.plantDatas[(PlantType)int.Parse(fields[0])].field_Public_Single_0 =
-                                float.Parse(fields[1]);
-                            PlantDataLoader.plantDatas[(PlantType)int.Parse(fields[0])].field_Public_Single_1 =
-                                float.Parse(fields[2]);
-                            PlantDataLoader.plantDatas[(PlantType)int.Parse(fields[0])].attackDamage = int.Parse(fields[3]);
-                            PlantDataLoader.plantDatas[(PlantType)int.Parse(fields[0])].field_Public_Int32_0 =
-                                int.Parse(fields[4]);
-                            PlantDataLoader.plantDatas[(PlantType)int.Parse(fields[0])].field_Public_Single_2 =
-                                float.Parse(fields[5]);
-                            PlantDataLoader.plantDatas[(PlantType)int.Parse(fields[0])].field_Public_Int32_1 =
-                                int.Parse(fields[6]);
-                            if (int.Parse(fields[0]) < PlantDataLoader.plantData.Count)
-                                PlantDataLoader.plantData[int.Parse(fields[0])] =
-                                    PlantDataLoader.plantDatas[(PlantType)int.Parse(fields[0])];
+                            var plantData = PlantDataManager.PlantData_Default[(PlantType)int.Parse(fields[0])];
+                            if (plantData != null)
+                            {
+                                plantData.attackInterval = float.Parse(fields[1]);     // field_Public_Single_0 -> attackInterval
+                                plantData.field_Public_Single_0 = float.Parse(fields[2]); // produce interval (保留)
+                                plantData.attackDamage = int.Parse(fields[3]);
+                                plantData.maxHealth = int.Parse(fields[4]);            // field_Public_Int32_0 -> maxHealth
+                                plantData.cd = float.Parse(fields[5]);                // field_Public_Single_2 -> cd
+                                plantData.cost = int.Parse(fields[6]);                // field_Public_Int32_1 -> cost
+                                // 3.3.0版本使用字典，不需要数组操作
+                            }
                         }
                     }
                     catch (FormatException ex)
