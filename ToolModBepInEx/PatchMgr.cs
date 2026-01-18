@@ -1271,7 +1271,7 @@ public static class UnlimitedSunlightPatches
     /// </summary>
     [HarmonyPatch(nameof(Board.UseSun))]
     [HarmonyPrefix]
-    public static bool Prefix_UseSun(Board __instance, int count)
+    public static bool Prefix_UseSun(Board __instance, float count)
     {
         if (!UnlimitedSunlight) return true;
 
@@ -1279,8 +1279,9 @@ public static class UnlimitedSunlightPatches
         {
             if (__instance != null)
             {
-                __instance.theSun -= count;
-                __instance.theUsedSun += count;
+                int countInt = (int)count;  // 3.3.0版本UseSun参数类型为float，需要转换为int
+                __instance.theSun -= countInt;
+                __instance.theUsedSun += countInt;
             }
             return false;
         }
