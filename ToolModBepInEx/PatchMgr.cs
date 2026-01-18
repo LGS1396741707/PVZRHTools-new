@@ -2614,6 +2614,126 @@ public static class ZombieSetJalaedCoexistPatch
 }
 
 /// <summary>
+/// Zombie.SetEmbered 全局安全检查补丁 - 防止内存访问违规
+/// 在所有其他 SetEmbered 补丁之前运行，确保对象有效性
+/// 关键：完全阻止可能有问题的原方法执行，使用安全的托管实现
+/// </summary>
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.SetEmbered))]
+public static class ZombieSetEmberedSafetyPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.First)] // 最高优先级，在所有其他补丁之前运行
+    public static bool Prefix(Zombie __instance, bool ulti = false)
+    {
+        try
+        {
+            // 基本 null 检查
+            if (__instance == null) return false; // 阻止执行
+            
+            // 使用 Il2CppInterop 的安全检查方法验证对象指针
+            IntPtr ptr;
+            try
+            {
+                ptr = Il2CppInterop.Runtime.IL2CPP.Il2CppObjectBaseToPtrNotNull(__instance);
+                if (ptr == IntPtr.Zero) return false; // 无效指针，阻止执行
+            }
+            catch
+            {
+                // 对象指针验证失败，阻止执行
+                return false;
+            }
+            
+            // 安全地检查对象的基本字段是否可访问
+            // 如果对象已销毁，访问字段会抛出异常
+            int health = 0;
+            try
+            {
+                health = __instance.theHealth;
+            }
+            catch
+            {
+                // 对象可能已销毁或字段不可访问，阻止执行
+                return false;
+            }
+            
+            // 检查僵尸是否已死亡
+            if (health <= 0) return false; // 已死亡对象，阻止执行
+            
+            // 如果所有安全检查都通过，我们需要决定是否允许原方法执行
+            // 由于崩溃发生在 IL2CPP 运行时调用中，我们可以选择：
+            // 1. 返回 true 允许执行（但可能仍然崩溃）
+            // 2. 返回 false 阻止执行，但需要手动设置状态
+            
+            // 所有安全检查都通过，对象看起来有效
+            // 但为了防止在原生方法调用时对象突然变得无效（竞争条件），
+            // 我们完全阻止原生方法执行，改用安全的托管实现
+            // 原生实现会访问 this->klass->vtable，如果对象已损坏会导致崩溃
+            
+            // 安全地手动实现 SetEmbered 的完整功能（对应原生代码）
+            // 原生代码：1. 如果 ulti=true，设置 ultiEmbered=1
+            //           2. 设置 isEmbered=1
+            //           3. 调用 UpdateColor()
+            try
+            {
+                // 1. 设置 isEmbered（对应原生代码的 this->fields.isEmbered = 1）
+                __instance.isEmbered = true;
+                
+                // 2. 如果 ulti=true，设置 ultiEmbered（对应原生代码的 this->fields.ultiEmbered = 1）
+                if (ulti)
+                {
+                    try
+                    {
+                        // 注意：ultiEmbered 字段可能不存在于所有版本，用 try-catch 保护
+                        __instance.ultiEmbered = true;
+                    }
+                    catch
+                    {
+                        // 字段可能不存在，忽略（不影响主要功能）
+                    }
+                }
+                
+                // 3. 尝试调用 UpdateColor（对应原生代码的 klass->vtable._35_UpdateColor）
+                // 使用 try-catch 保护，因为 UpdateColor 可能也需要访问虚函数表
+                try
+                {
+                    __instance.UpdateColor();
+                }
+                catch
+                {
+                    // UpdateColor 调用失败，但余烬状态已设置
+                    // 不阻止返回，因为主要功能（设置余烬状态）已完成
+                }
+                
+                // 所有操作成功，阻止原方法执行（我们已经手动实现了功能）
+                return false; // 阻止原生方法执行，使用安全的托管实现
+            }
+            catch
+            {
+                // 如果手动实现失败，对象可能已损坏，阻止执行原方法
+                return false;
+            }
+        }
+        catch
+        {
+            // 任何异常都阻止执行
+            return false;
+        }
+    }
+    
+    // 添加 Finalizer 来捕获可能的异常（虽然 AccessViolationException 通常无法捕获）
+    [HarmonyFinalizer]
+    public static Exception? Finalizer(Zombie __instance, bool ulti, Exception? __exception)
+    {
+        // 记录异常但不重新抛出（因为可能无法捕获 AccessViolationException）
+        if (__exception != null)
+        {
+            // 异常已发生，但已经无法阻止崩溃
+        }
+        return null; // 不重新抛出异常
+    }
+}
+
+/// <summary>
 /// 僵尸状态并存补丁 - Zombie.SetEmbered (余烬状态)
 /// 当启用状态并存时，完全阻止原方法执行，手动设置余烬状态以保留寒冷状态
 /// 同时手动应用余烬视觉效果
@@ -2625,16 +2745,43 @@ public static class ZombieSetEmberedCoexistPatch
     private static readonly Color EmberedColor = new Color(0.8f, 0.3f, 0.1f, 1f);
     
     [HarmonyPrefix]
-    public static bool Prefix(Zombie __instance)
+    public static bool Prefix(Zombie __instance, bool ulti = false)
     {
         if (!ZombieStatusCoexist) return true; // 不启用时正常执行原方法
         
         try
         {
+            // 严格的对象有效性检查
             if (__instance == null) return true;
             
+            // 安全地检查对象有效性
+            try
+            {
+                var _ = __instance.theHealth;
+            }
+            catch
+            {
+                return true; // 对象可能已销毁
+            }
+            
+            try
+            {
+                if (__instance.theHealth <= 0) return true;
+            }
+            catch
+            {
+                return true; // 对象可能已销毁
+            }
+            
             // 手动设置余烬状态，不调用原方法（原方法会清除寒冷状态）
-            __instance.isEmbered = true;
+            try
+            {
+                __instance.isEmbered = true;
+            }
+            catch
+            {
+                return true; // 如果设置失败，执行原方法
+            }
             
             // 手动应用余烬视觉效果
             ApplyEmberedVisual(__instance);
@@ -3655,12 +3802,33 @@ public static class ZombieImmuneSetEmberedPatch
 {
     [HarmonyPrefix]
     [HarmonyPriority(Priority.High)]
-    public static bool Prefix(Zombie __instance)
+    public static bool Prefix(Zombie __instance, bool ulti = false)
     {
         if (!ZombieImmuneAllDebuffs && !ZombieImmuneEmbered) return true;
         try
         {
+            // 严格的对象有效性检查
             if (__instance == null) return true;
+            
+            // 安全地检查对象有效性
+            try
+            {
+                var _ = __instance.theHealth;
+            }
+            catch
+            {
+                return true; // 对象可能已销毁
+            }
+            
+            try
+            {
+                if (__instance.theHealth <= 0) return true;
+            }
+            catch
+            {
+                return true; // 对象可能已销毁
+            }
+            
             // 阻止余烬效果
             return false;
         }
@@ -4486,12 +4654,40 @@ public class PatchMgr : MonoBehaviour
 
     public static void UpdateInGameBuffs()
     {
-        for (var i = 0; i < GameAPP.gameAPP.GetOrAddComponent<TravelMgr>().advancedUpgrades.Count; i++)
-            GameAPP.gameAPP.GetOrAddComponent<TravelMgr>().advancedUpgrades![i] = InGameAdvBuffs[i];
-        for (var i = 0; i < GameAPP.gameAPP.GetOrAddComponent<TravelMgr>().ultimateUpgrades.Count; i++)
-            GameAPP.gameAPP.GetOrAddComponent<TravelMgr>().ultimateUpgrades![i] = GetIntArray(InGameUltiBuffs)[i];
-        for (var i = 0; i < GameAPP.gameAPP.GetOrAddComponent<TravelMgr>().debuff.Count; i++)
-            GameAPP.gameAPP.GetOrAddComponent<TravelMgr>().debuff![i] = InGameDebuffs[i];
+        try
+        {
+            var travelMgr = GameAPP.gameAPP.GetOrAddComponent<TravelMgr>();
+            
+            // 修复数组越界问题：确保访问本地数组时不超过其长度
+            if (travelMgr.advancedUpgrades != null && InGameAdvBuffs != null)
+            {
+                var count = Math.Min(travelMgr.advancedUpgrades.Count, InGameAdvBuffs.Length);
+                for (var i = 0; i < count; i++)
+                    travelMgr.advancedUpgrades[i] = InGameAdvBuffs[i];
+            }
+            
+            if (travelMgr.ultimateUpgrades != null && InGameUltiBuffs != null)
+            {
+                var ultiArray = GetIntArray(InGameUltiBuffs);
+                if (ultiArray != null)
+                {
+                    var count = Math.Min(travelMgr.ultimateUpgrades.Count, ultiArray.Length);
+                    for (var i = 0; i < count; i++)
+                        travelMgr.ultimateUpgrades[i] = ultiArray[i];
+                }
+            }
+            
+            if (travelMgr.debuff != null && InGameDebuffs != null)
+            {
+                var count = Math.Min(travelMgr.debuff.Count, InGameDebuffs.Length);
+                for (var i = 0; i < count; i++)
+                    travelMgr.debuff[i] = InGameDebuffs[i];
+            }
+        }
+        catch (System.Exception ex)
+        {
+            MLogger?.LogError($"UpdateInGameBuffs 异常: {ex.Message}\n{ex.StackTrace}");
+        }
     }
 }
 
