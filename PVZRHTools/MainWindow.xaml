@@ -807,6 +807,15 @@
                                                   VerticalAlignment="Top" Foreground="#FF333333" BorderThickness="2,2,2,2"
                                                   HorizontalAlignment="Left" Margin="0,0,10,0"
                                                   ToolTip="{DynamicResource Tab1.Page7.UnlimitedCardSlots.Tooltip}" />
+                                    </WrapPanel>
+                                    <WrapPanel Orientation="Horizontal" Margin="0,5,0,5">
+                                        <CheckBox x:Name="RandomBullet" IsChecked="{Binding RandomBullet}"
+                                                  Content="{DynamicResource Tab1.Page7.RandomBullet}" Height="21"
+                                                  VerticalAlignment="Top" Foreground="#FF333333" BorderThickness="2,2,2,2"
+                                                  HorizontalAlignment="Left" Margin="0,0,10,0"
+                                                  ToolTip="{DynamicResource Tab1.Page7.RandomBullet.Tooltip}" />
+                                    </WrapPanel>
+                                    <WrapPanel Orientation="Horizontal" Margin="0,5,0,5">
                                         <Button Content="{DynamicResource Tab1.Page7.SpawnPetGargantuar}" Height="21"
                                                 Command="{Binding SpawnPetGargantuarCommand}"
                                                 ToolTip="{DynamicResource Tab1.Page7.SpawnPetGargantuar.Tooltip}"
@@ -819,13 +828,6 @@
                                                 Command="{Binding SpawnPetSnowBossCommand}"
                                                 ToolTip="{DynamicResource Tab1.Page7.SpawnPetSnowBoss.Tooltip}"
                                                 HorizontalAlignment="Left" Margin="0,0,10,0" Padding="8,0" />
-                                    </WrapPanel>
-                                    <WrapPanel Orientation="Horizontal" Margin="0,5,0,5">
-                                        <CheckBox x:Name="RandomBullet" IsChecked="{Binding RandomBullet}"
-                                                  Content="{DynamicResource Tab1.Page7.RandomBullet}" Height="21"
-                                                  VerticalAlignment="Top" Foreground="#FF333333" BorderThickness="2,2,2,2"
-                                                  HorizontalAlignment="Left" Margin="0,0,10,0"
-                                                  ToolTip="{DynamicResource Tab1.Page7.RandomBullet.Tooltip}" />
                                     </WrapPanel>
                                 </StackPanel>
                             </Expander>
