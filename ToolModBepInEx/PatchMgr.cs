@@ -4608,25 +4608,39 @@ public class PatchMgr : MonoBehaviour
             yield return null;
 
             var advs = travelMgr.advancedUpgrades;
-
-            for (var i = 0; i < advs.Count; i++)
+            if (advs != null && AdvBuffs != null)
             {
-                advs[i] = AdvBuffs[i] || advs[i];
-                yield return null;
+                // 修复数组越界：确保访问本地数组时不超过其长度
+                var count = Math.Min(advs.Count, AdvBuffs.Length);
+                for (var i = 0; i < count; i++)
+                {
+                    advs[i] = AdvBuffs[i] || advs[i];
+                    yield return null;
+                }
             }
 
             var ultis = travelMgr.ultimateUpgrades;
-            for (var i = 0; i < ultis.Count; i++)
+            if (ultis != null && UltiBuffs != null)
             {
-                ultis[i] = UltiBuffs[i] || ultis[i] is 1 ? 1 : 0;
-                yield return null;
+                // 修复数组越界：确保访问本地数组时不超过其长度
+                var count = Math.Min(ultis.Count, UltiBuffs.Length);
+                for (var i = 0; i < count; i++)
+                {
+                    ultis[i] = UltiBuffs[i] || ultis[i] is 1 ? 1 : 0;
+                    yield return null;
+                }
             }
 
             var deb = travelMgr.debuff;
-            for (var i = 0; i < deb.Count; i++)
+            if (deb != null && Debuffs != null)
             {
-                deb[i] = Debuffs[i] || deb[i];
-                yield return null;
+                // 修复数组越界：确保访问本地数组时不超过其长度
+                var count = Math.Min(deb.Count, Debuffs.Length);
+                for (var i = 0; i < count; i++)
+                {
+                    deb[i] = Debuffs[i] || deb[i];
+                    yield return null;
+                }
             }
             
             // 设置 BoardTag 标志，使游戏识别并应用词条效果
@@ -4656,9 +4670,31 @@ public class PatchMgr : MonoBehaviour
         InGameDebuffs = new bool[TravelMgr.debuffs.Count];
         yield return null;
 
-        InGameAdvBuffs = travelMgr.advancedUpgrades;
-        InGameUltiBuffs = GetBoolArray(travelMgr.ultimateUpgrades);
-        InGameDebuffs = travelMgr.debuff;
+        // 安全地复制数组，防止越界
+        if (travelMgr.advancedUpgrades != null)
+        {
+            var count = Math.Min(travelMgr.advancedUpgrades.Count, InGameAdvBuffs.Length);
+            for (var i = 0; i < count; i++)
+                InGameAdvBuffs[i] = travelMgr.advancedUpgrades[i];
+        }
+        
+        if (travelMgr.ultimateUpgrades != null)
+        {
+            var ultiArray = GetBoolArray(travelMgr.ultimateUpgrades);
+            if (ultiArray != null)
+            {
+                var count = Math.Min(ultiArray.Length, InGameUltiBuffs.Length);
+                for (var i = 0; i < count; i++)
+                    InGameUltiBuffs[i] = ultiArray[i];
+            }
+        }
+        
+        if (travelMgr.debuff != null)
+        {
+            var count = Math.Min(travelMgr.debuff.Count, InGameDebuffs.Length);
+            for (var i = 0; i < count; i++)
+                InGameDebuffs[i] = travelMgr.debuff[i];
+        }
         yield return null;
         new Thread(SyncInGameBuffs).Start();
 
@@ -4863,6 +4899,19 @@ public static class MNEntryTravelMgrPatch
             // 只有开启时才注册两个词条
             if (!PatchMgr.MNEntryEnabled) return;
 
+            // 检查 TravelMgr.advancedBuffs 是否已初始化
+            if (TravelMgr.advancedBuffs == null)
+            {
+                MLogger.LogError("MNEntry词条注册失败: TravelMgr.advancedBuffs 为 null");
+                return;
+            }
+
+            if (__instance.advancedUpgrades == null)
+            {
+                MLogger.LogError("MNEntry词条注册失败: __instance.advancedUpgrades 为 null");
+                return;
+            }
+
             int baseId = TravelMgr.advancedBuffs.Count;
 
             // 注册两个词条
@@ -4874,7 +4923,7 @@ public static class MNEntryTravelMgrPatch
             Array.Copy(__instance.advancedUpgrades.ToArray(), newUpgrades, __instance.advancedUpgrades.Count);
             __instance.advancedUpgrades = newUpgrades;
 
-            // 注册词条文本
+            // 注册词条文本（Dictionary 会自动处理键值对）
             TravelMgr.advancedBuffs[TravelId1] = BuffText1;
             TravelMgr.advancedBuffs[TravelId2] = BuffText2;
             MLogger.LogInfo($"MNEntry词条注册成功，ID1: {TravelId1}, ID2: {TravelId2}");
