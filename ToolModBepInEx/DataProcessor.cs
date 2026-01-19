@@ -862,8 +862,52 @@ all");
             }
 
 
-            // 3.3.0版本中newZombieWaveCountDown字段已被移除
-            // if (iga.NextWave is not null) Board.Instance.newZombieWaveCountDown = 0;
+            // 3.3.0版本中newZombieWaveCountDown字段已被移除，需要同时更新Board和BoardSpawner的波数，然后调用SummonZombies()
+            if (iga.NextWave is not null && iga.NextWave == true)
+            {
+                try
+                {
+                    // 严格检查：确保游戏已经完全初始化且波数系统已准备好
+                    // theWave == 0 表示第一波还没开始，此时不应该执行"生成下一波"操作
+                    // 必须确保至少第一波已经开始（theWave > 0），才能安全地生成下一波
+                    if (Board.Instance != null 
+                        && Board.Instance.theMaxWave > 0  // 确保最大波数已设置
+                        && Board.Instance.theWave > 0     // 确保至少第一波已经开始（theWave == 0 时不应该执行）
+                        && Board.Instance.theWave < Board.Instance.theMaxWave  // 确保还没到最后一波
+                        && Board.Instance.boardSpawner != null)  // 确保boardSpawner已初始化
+                    {
+                        // 先增加波数（同时更新Board和BoardSpawner的波数）
+                        Board.Instance.theWave++;
+                        Board.Instance.boardSpawner.theWave = Board.Instance.theWave;
+                        
+                        // 然后调用SummonZombies()生成僵尸
+                        Board.Instance.boardSpawner.SummonZombies();
+                    }
+                    // 如果条件不满足（特别是 theWave == 0），说明游戏还没开始第一波，
+                    // 直接返回，不执行任何操作，避免导致关卡进度条不出现和出怪异常
+                }
+                catch (System.Exception)
+                {
+                    // 如果出错，尝试回退波数
+                    try
+                    {
+                        if (Board.Instance != null && Board.Instance.theWave > 0)
+                        {
+                            Board.Instance.theWave--;
+                            // 如果boardSpawner存在，也回退它的波数
+                            if (Board.Instance.boardSpawner != null)
+                            {
+                                Board.Instance.boardSpawner.theWave = Board.Instance.theWave;
+                            }
+                        }
+                    }
+                    catch { }
+                    
+                    // 记录错误但不抛出，避免影响游戏运行
+                    // 如果需要在调试时查看错误，可以取消注释下面的代码
+                    // MLogger.LogError($"生成下一波僵尸失败: {ex.Message}");
+                }
+            }
 
             //感谢@高数带我飞(Github:https://github.com/LibraHp/)的植物阵容码导出和解码代码
             //现在此修改器和高数带我飞的修改器植物阵容码可以互通了
