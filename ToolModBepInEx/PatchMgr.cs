@@ -1563,19 +1563,42 @@ public static class InGameTextPatch
 {
     public static void Postfix()
     {
-        for (var i = 0; i < InGameAdvBuffs.Length; i++)
-            if (InGameAdvBuffs[i] != GameAPP.gameAPP.GetOrAddComponent<TravelMgr>().advancedUpgrades[i])
+        try
+        {
+            // 使用统一的 TravelMgr 获取方法，防止与 Modified-Plus 冲突
+            var travelMgr = ResolveTravelMgr();
+            if (travelMgr == null) return;
+            
+            if (travelMgr.advancedUpgrades != null && InGameAdvBuffs != null)
             {
-                SyncInGameBuffs();
-                return;
+                var count = Math.Min(InGameAdvBuffs.Length, travelMgr.advancedUpgrades.Count);
+                for (var i = 0; i < count; i++)
+                    if (InGameAdvBuffs[i] != travelMgr.advancedUpgrades[i])
+                    {
+                        SyncInGameBuffs();
+                        return;
+                    }
             }
 
-        for (var i = 0; i < InGameUltiBuffs.Length; i++)
-            if (InGameUltiBuffs[i] != GetBoolArray(GameAPP.gameAPP.GetOrAddComponent<TravelMgr>().ultimateUpgrades)[i])
+            if (travelMgr.ultimateUpgrades != null && InGameUltiBuffs != null)
             {
-                SyncInGameBuffs();
-                return;
+                var ultiArray = GetBoolArray(travelMgr.ultimateUpgrades);
+                if (ultiArray != null)
+                {
+                    var count = Math.Min(InGameUltiBuffs.Length, ultiArray.Length);
+                    for (var i = 0; i < count; i++)
+                        if (InGameUltiBuffs[i] != ultiArray[i])
+                        {
+                            SyncInGameBuffs();
+                            return;
+                        }
+                }
             }
+        }
+        catch (System.Exception ex)
+        {
+            MLogger?.LogError($"[PVZRHTools] InGameTextPatch 异常: {ex.Message}\n{ex.StackTrace}");
+        }
     }
 }
 
@@ -4570,7 +4593,14 @@ public class PatchMgr : MonoBehaviour
 
     public static IEnumerator PostInitBoard()
     {
-        var travelMgr = GameAPP.gameAPP.GetOrAddComponent<TravelMgr>();
+        // 使用统一的 TravelMgr 获取方法，防止与 Modified-Plus 冲突
+        var travelMgr = ResolveTravelMgr();
+        if (travelMgr == null)
+        {
+            MLogger?.LogWarning("[PVZRHTools] PostInitBoard: 无法找到 TravelMgr 组件");
+            yield break;
+        }
+        
         Board.Instance.freeCD = FreeCD;
         yield return null;
         if (!(GameAPP.theBoardType == (LevelType)3 && Board.Instance.theCurrentSurvivalRound != 1))
@@ -4597,6 +4627,28 @@ public class PatchMgr : MonoBehaviour
             {
                 deb[i] = Debuffs[i] || deb[i];
                 yield return null;
+            }
+            
+            // 设置 BoardTag 标志，使游戏识别并应用词条效果
+            // 这与 Modified-Plus 的处理方式一致，参考 HeiTa 和 SuperGoldPresent
+            try
+            {
+                if (Board.Instance != null && GameAPP.board != null)
+                {
+                    var board = GameAPP.board.GetComponent<Board>();
+                    if (board != null)
+                    {
+                        var boardTag = board.boardTag;
+                        boardTag.isTravel = true;
+                        boardTag.enableTravelBuff = true;
+                        Board.Instance.boardTag = boardTag;
+                        MLogger?.LogInfo("[PVZRHTools] PostInitBoard: 已设置 BoardTag 标志，词条效果应该会生效");
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                MLogger?.LogError($"[PVZRHTools] PostInitBoard 设置 BoardTag 失败: {ex.Message}\n{ex.StackTrace}");
             }
         }
 
@@ -4644,19 +4696,69 @@ public class PatchMgr : MonoBehaviour
     public static void SyncInGameBuffs()
     {
         if (!InGame()) return;
-        DataSync.Instance.Value.SendData(new SyncTravelBuff
+        try
         {
-            AdvInGame = [.. GameAPP.gameAPP.GetOrAddComponent<TravelMgr>().advancedUpgrades!],
-            UltiInGame = [.. GetBoolArray(GameAPP.gameAPP.GetOrAddComponent<TravelMgr>().ultimateUpgrades)!],
-            DebuffsInGame = [.. GameAPP.gameAPP.GetOrAddComponent<TravelMgr>().debuff!]
-        });
+            // 使用统一的 TravelMgr 获取方法，防止与 Modified-Plus 冲突
+            var travelMgr = ResolveTravelMgr();
+            if (travelMgr == null)
+            {
+                MLogger?.LogWarning("[PVZRHTools] SyncInGameBuffs: 无法找到 TravelMgr 组件");
+                return;
+            }
+
+            if (travelMgr.advancedUpgrades == null || travelMgr.ultimateUpgrades == null || travelMgr.debuff == null)
+            {
+                MLogger?.LogWarning("[PVZRHTools] SyncInGameBuffs: TravelMgr 的词条数据未初始化");
+                return;
+            }
+            
+            DataSync.Instance.Value.SendData(new SyncTravelBuff
+            {
+                AdvInGame = [.. travelMgr.advancedUpgrades],
+                UltiInGame = [.. GetBoolArray(travelMgr.ultimateUpgrades)],
+                DebuffsInGame = [.. travelMgr.debuff]
+            });
+        }
+        catch (System.Exception ex)
+        {
+            MLogger?.LogError($"[PVZRHTools] SyncInGameBuffs 异常: {ex.Message}\n{ex.StackTrace}");
+        }
+    }
+
+    /// <summary>
+    /// 统一获取 TravelMgr（兼容多种场景，防止与 Modified-Plus 冲突）
+    /// 参考 HeiTa 和 SuperGoldPresent 的处理方式
+    /// </summary>
+    internal static TravelMgr? ResolveTravelMgr()
+    {
+        TravelMgr? travelMgr = null;
+        try { travelMgr = TravelMgr.Instance; } catch { }
+        if (travelMgr == null && GameAPP.gameAPP != null)
+        {
+            travelMgr = GameAPP.gameAPP.GetComponent<TravelMgr>();
+        }
+        if (travelMgr == null)
+        {
+            travelMgr = UnityEngine.Object.FindObjectOfType<TravelMgr>();
+        }
+        if (travelMgr == null && GameAPP.board != null)
+        {
+            travelMgr = GameAPP.board.GetComponent<TravelMgr>();
+        }
+        return travelMgr;
     }
 
     public static void UpdateInGameBuffs()
     {
         try
         {
-            var travelMgr = GameAPP.gameAPP.GetOrAddComponent<TravelMgr>();
+            // 使用统一的 TravelMgr 获取方法，防止与 Modified-Plus 冲突
+            var travelMgr = ResolveTravelMgr();
+            if (travelMgr == null)
+            {
+                MLogger?.LogWarning("[PVZRHTools] 无法找到 TravelMgr 组件，可能是 Modified-Plus 插件冲突或游戏未初始化");
+                return;
+            }
             
             // 修复数组越界问题：确保访问本地数组时不超过其长度
             if (travelMgr.advancedUpgrades != null && InGameAdvBuffs != null)
@@ -4682,6 +4784,28 @@ public class PatchMgr : MonoBehaviour
                 var count = Math.Min(travelMgr.debuff.Count, InGameDebuffs.Length);
                 for (var i = 0; i < count; i++)
                     travelMgr.debuff[i] = InGameDebuffs[i];
+            }
+            
+            // 关键修复：设置 BoardTag 标志，使游戏识别并应用词条效果
+            // 这与 Modified-Plus 的处理方式一致，参考 HeiTa 和 SuperGoldPresent
+            try
+            {
+                if (Board.Instance != null && GameAPP.board != null)
+                {
+                    var board = GameAPP.board.GetComponent<Board>();
+                    if (board != null)
+                    {
+                        var boardTag = board.boardTag;
+                        boardTag.isTravel = true;
+                        boardTag.enableTravelBuff = true;
+                        Board.Instance.boardTag = boardTag;
+                        MLogger?.LogInfo("[PVZRHTools] 已设置 BoardTag 标志，词条效果应该会生效");
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                MLogger?.LogError($"[PVZRHTools] 设置 BoardTag 失败: {ex.Message}\n{ex.StackTrace}");
             }
         }
         catch (System.Exception ex)
