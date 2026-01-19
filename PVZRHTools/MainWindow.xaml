@@ -1206,7 +1206,7 @@
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                                   PreviewMouseWheel="ScrollViewer_PreviewMouseWheel"
                                   CanContentScroll="False">
-                        <Grid>
+                        <StackPanel Margin="10,10,10,10">
                             <ComboBox SelectedValue="{Binding LockPresent1}"
                                                  hc:TitleElement.TitlePlacement="Left"
                                                  hc:TitleElement.VerticalAlignment="Top"
@@ -1215,7 +1215,7 @@
                                                  Height="24"
                                                  SelectedValuePath="Key" DisplayMemberPath="Value"
                                                  ItemsSource="{Binding Plants}"
-                                                 Style="{DynamicResource ComboBoxExtend}" Margin="10,10,370,347"
+                                                 Style="{DynamicResource ComboBoxExtend}" Margin="0,0,0,10"
                                                  IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
                             <ComboBox SelectedValue="{Binding LockPresent2}"
                                                  hc:TitleElement.TitlePlacement="Left"
@@ -1225,7 +1225,7 @@
                                                  Height="24"
                                                  SelectedValuePath="Key" DisplayMemberPath="Value"
                                                  ItemsSource="{Binding Plants}"
-                                                 Style="{DynamicResource ComboBoxExtend}" Margin="10,43,370,314"
+                                                 Style="{DynamicResource ComboBoxExtend}" Margin="0,0,0,10"
                                                  IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
                             <ComboBox SelectedValue="{Binding LockPresent3}"
                                                  hc:TitleElement.TitlePlacement="Left"
@@ -1235,7 +1235,7 @@
                                                  Height="24"
                                                  SelectedValuePath="Key" DisplayMemberPath="Value"
                                                  ItemsSource="{Binding Plants}"
-                                                 Style="{DynamicResource ComboBoxExtend}" Margin="10,76,370,281"
+                                                 Style="{DynamicResource ComboBoxExtend}" Margin="0,0,0,10"
                                                  IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
                             <ComboBox SelectedValue="{Binding LockPresent4}"
                                                  hc:TitleElement.TitlePlacement="Left"
@@ -1245,7 +1245,7 @@
                                                  Height="24"
                                                  SelectedValuePath="Key" DisplayMemberPath="Value"
                                                  ItemsSource="{Binding Plants}"
-                                                 Style="{DynamicResource ComboBoxExtend}" Margin="10,109,370,248"
+                                                 Style="{DynamicResource ComboBoxExtend}" Margin="0,0,0,10"
                                                  IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
                             <ComboBox SelectedValue="{Binding LockPresent5}"
                                                  hc:TitleElement.TitlePlacement="Left"
@@ -1255,23 +1255,25 @@
                                                  Height="24"
                                                  SelectedValuePath="Key" DisplayMemberPath="Value"
                                                  ItemsSource="{Binding Plants}"
-                                                 Style="{DynamicResource ComboBoxExtend}" Margin="10,142,370,215"
+                                                 Style="{DynamicResource ComboBoxExtend}" Margin="0,0,0,10"
                                                  IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
 
                             <Button x:Name="PvE" Content="一键放置五植物+一钻盲僵+四黄金盲僵尸+一巨盲盒僵（Ctrl+A）"
                                             HorizontalAlignment="Left" Height="30" Width="383"
-                                            Command="{Binding PvECommand}" Margin="10,175,0,0" VerticalAlignment="Top" />
-                            <CheckBox x:Name="KillUpgrade" IsChecked="{Binding KillUpgrade}"
-                                              Content="{DynamicResource Tab8.KillUpgrade}" Height="21"
-                                              Margin="10,215,0,0" VerticalAlignment="Top" Foreground="#FF333333"
-                                              BorderThickness="2,2,2,2" HorizontalAlignment="Left"
-                                              ToolTip="{DynamicResource Tab8.KillUpgrade.Tooltip}" />
-                            <CheckBox x:Name="RandomUpgradeMode2" IsChecked="{Binding RandomUpgradeMode}"
-                                              Content="{DynamicResource Tab1.Page7.RandomUpgradeMode}" Height="21"
-                                              Margin="120,215,0,0" VerticalAlignment="Top" Foreground="#FF333333"
-                                              BorderThickness="2,2,2,2" HorizontalAlignment="Left"
-                                              ToolTip="{DynamicResource Tab1.Page7.RandomUpgradeMode.Tooltip}" />
-                        </Grid>
+                                            Command="{Binding PvECommand}" Margin="0,10,0,10" VerticalAlignment="Top" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
+                                <CheckBox x:Name="KillUpgrade" IsChecked="{Binding KillUpgrade}"
+                                                  Content="{DynamicResource Tab8.KillUpgrade}" Height="21"
+                                                  Margin="0,0,20,0" VerticalAlignment="Top" Foreground="#FF333333"
+                                                  BorderThickness="2,2,2,2" HorizontalAlignment="Left"
+                                                  ToolTip="{DynamicResource Tab8.KillUpgrade.Tooltip}" />
+                                <CheckBox x:Name="RandomUpgradeMode2" IsChecked="{Binding RandomUpgradeMode}"
+                                                  Content="{DynamicResource Tab1.Page7.RandomUpgradeMode}" Height="21"
+                                                  Margin="0,0,0,0" VerticalAlignment="Top" Foreground="#FF333333"
+                                                  BorderThickness="2,2,2,2" HorizontalAlignment="Left"
+                                                  ToolTip="{DynamicResource Tab1.Page7.RandomUpgradeMode.Tooltip}" />
+                            </StackPanel>
+                        </StackPanel>
                     </ScrollViewer>
                 </Border>
             </TabItem>
