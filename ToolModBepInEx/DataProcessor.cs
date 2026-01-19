@@ -867,24 +867,41 @@ all");
             {
                 try
                 {
-                    // 严格检查：确保游戏已经完全初始化且波数系统已准备好
-                    // theWave == 0 表示第一波还没开始，此时不应该执行"生成下一波"操作
-                    // 必须确保至少第一波已经开始（theWave > 0），才能安全地生成下一波
-                    if (Board.Instance != null 
-                        && Board.Instance.theMaxWave > 0  // 确保最大波数已设置
-                        && Board.Instance.theWave > 0     // 确保至少第一波已经开始（theWave == 0 时不应该执行）
-                        && Board.Instance.theWave < Board.Instance.theMaxWave  // 确保还没到最后一波
-                        && Board.Instance.boardSpawner != null)  // 确保boardSpawner已初始化
+                    // 检查游戏是否已初始化
+                    if (Board.Instance != null && Board.Instance.theMaxWave > 0)
                     {
-                        // 先增加波数（同时更新Board和BoardSpawner的波数）
-                        Board.Instance.theWave++;
-                        Board.Instance.boardSpawner.theWave = Board.Instance.theWave;
-                        
-                        // 然后调用SummonZombies()生成僵尸
-                        Board.Instance.boardSpawner.SummonZombies();
+                        // 如果波数还没开始（theWave == 0），显示关卡进度条并开始第一波
+                        if (Board.Instance.theWave == 0)
+                        {
+                            // 显示关卡进度条（参考ZombieBoss2Remake第三阶段移除进度条的方法）
+                            if (InGameUI.Instance != null && InGameUI.Instance.LevProgress != null)
+                            {
+                                InGameUI.Instance.LevProgress.SetActive(true);
+                            }
+                            
+                            // 开始第一波：设置波数为1
+                            Board.Instance.theWave = 1;
+                            
+                            // 如果boardSpawner已初始化，同步更新并生成僵尸
+                            if (Board.Instance.boardSpawner != null)
+                            {
+                                Board.Instance.boardSpawner.theWave = Board.Instance.theWave;
+                                Board.Instance.boardSpawner.SummonZombies();
+                            }
+                        }
+                        // 如果第一波已经开始，正常生成下一波
+                        else if (Board.Instance.theWave > 0 
+                                 && Board.Instance.theWave < Board.Instance.theMaxWave
+                                 && Board.Instance.boardSpawner != null)
+                        {
+                            // 先增加波数（同时更新Board和BoardSpawner的波数）
+                            Board.Instance.theWave++;
+                            Board.Instance.boardSpawner.theWave = Board.Instance.theWave;
+                            
+                            // 然后调用SummonZombies()生成僵尸
+                            Board.Instance.boardSpawner.SummonZombies();
+                        }
                     }
-                    // 如果条件不满足（特别是 theWave == 0），说明游戏还没开始第一波，
-                    // 直接返回，不执行任何操作，避免导致关卡进度条不出现和出怪异常
                 }
                 catch (System.Exception)
                 {
