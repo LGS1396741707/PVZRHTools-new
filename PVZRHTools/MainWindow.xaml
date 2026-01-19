@@ -210,11 +210,12 @@
                                             Command="{Binding CreatePlantCommand}"
                                             Style="{DynamicResource ButtonGroupItemHorizontalFirst}" />
                                     <ComboBox x:Name="PlantType" SelectedValuePath="Key" DisplayMemberPath="Value"
-                                              ItemsSource="{Binding Plants2}" SelectedValue="{Binding PlantType}"
+                                              ItemsSource="{Binding Plants2}" SelectedValue="{Binding PlantType, ValidatesOnExceptions=False, ValidatesOnDataErrors=False, UpdateSourceTrigger=PropertyChanged}"
                                               Style="{DynamicResource ComboBoxExtend}" Width="150"
                                               HorizontalAlignment="Left" VerticalContentAlignment="Center"
                                               Margin="-34,0,0,0" VerticalAlignment="Center" Height="30"
-                                              IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
+                                              IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value"
+                                              local:ComboBoxChineseSearchExt.EnableChineseSearch="True" />
                                     <Button x:Name="CreateCard" Content="{DynamicResource Tab2.Page1.CreateCard}"
                                             Width="122" Command="{Binding CreateCardCommand}" Height="30" />
                                     <Button x:Name="SimplePresents"
@@ -231,8 +232,9 @@
                                         <ComboBox x:Name="ZombieType" HorizontalAlignment="Left" Height="30"
                                                   VerticalAlignment="Center" Width="150" SelectedValuePath="Key"
                                                   DisplayMemberPath="Value" ItemsSource="{Binding Zombies}"
-                                                  SelectedValue="{Binding ZombieType}"
-                                                  IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
+                                                  SelectedValue="{Binding ZombieType, ValidatesOnExceptions=False, ValidatesOnDataErrors=False, UpdateSourceTrigger=PropertyChanged}"
+                                                  IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value"
+                                                  local:ComboBoxChineseSearchExt.EnableChineseSearch="True" />
                                     </hc:ElementGroup>
                                     <CheckBox x:Name="IsMindCtrl" Content="{DynamicResource Tab2.Page1.IsMindCtrl}"
                                               Height="30" Foreground="#FF333333" BorderThickness="2,2,2,2"
@@ -256,9 +258,10 @@
                                                 Width="68" Command="{Binding CreateItemCommand}" />
                                         <ComboBox x:Name="ItemType" HorizontalAlignment="Left" Height="30"
                                                   VerticalAlignment="Top" Width="150" SelectedValuePath="Key"
-                                                  DisplayMemberPath="Value" SelectedValue="{Binding ItemType}"
+                                                  DisplayMemberPath="Value" SelectedValue="{Binding ItemType, ValidatesOnExceptions=False, ValidatesOnDataErrors=False, UpdateSourceTrigger=PropertyChanged}"
                                                   ItemsSource="{Binding Items, Mode=OneWay}"
-                                                  IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
+                                                  IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value"
+                                                  local:ComboBoxChineseSearchExt.EnableChineseSearch="True" />
 
                                     </hc:ElementGroup>
                                     <hc:ButtonGroup Height="30" Width="auto" Margin="10,0,0,0"
@@ -432,7 +435,8 @@
                                               SelectedValuePath="Key" DisplayMemberPath="Value"
                                               ItemsSource="{Binding Plants}" Style="{DynamicResource ComboBoxExtend}"
                                               VerticalAlignment="Top"
-                                              IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
+                                              IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value"
+                                              local:ComboBoxChineseSearchExt.EnableChineseSearch="True" />
                                 </Grid>
                             </Expander>
                             <Expander Header="{DynamicResource Tab1.Page3.Header}"
@@ -449,7 +453,8 @@
                                               DisplayMemberPath="Value" ItemsSource="{Binding Zombies, Mode=OneWay}"
                                               SelectedValue="{Binding HealthZombieType}"
                                               Style="{DynamicResource ComboBoxExtend}"
-                                              IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
+                                              IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value"
+                                              local:ComboBoxChineseSearchExt.EnableChineseSearch="True" />
                                     <ComboBox hc:TitleElement.TitlePlacement="Left"
                                               hc:TitleElement.Title="{DynamicResource Tab1.Page3.1stArmorHP}"
                                               hc:TitleElement.TitleWidth="115" x:Name="Health1stType"
