@@ -511,97 +511,150 @@ namespace PVZRHTools.Animations
         /// </summary>
         private static void EnableComboBoxScrollWheel(System.Windows.Controls.ComboBox comboBox)
         {
-            // 延迟执行，确保下拉列表已完全渲染
-            comboBox.Dispatcher.BeginInvoke(new System.Action(() =>
+            // 为 ComboBox 本身添加 PreviewMouseWheel 事件处理（最高优先级，在事件路由的最早阶段处理）
+            void ComboBoxPreviewMouseWheel(object sender, MouseWheelEventArgs e)
             {
-                try
+                // 检查下拉列表是否打开
+                if (comboBox.IsDropDownOpen)
                 {
-                    // 查找 ComboBox 的 Popup
-                    Popup? popup = comboBox.Template?.FindName("PART_Popup", comboBox) as Popup;
-                    if (popup?.Child != null)
+                    try
                     {
-                        // 查找 Popup 中的 ScrollViewer
-                        ScrollViewer? scrollViewer = FindVisualChild<ScrollViewer>(popup.Child);
-                        if (scrollViewer != null)
+                        // 查找 ComboBox 的 Popup
+                        Popup? popup = comboBox.Template?.FindName("PART_Popup", comboBox) as Popup;
+                        if (popup?.IsOpen == true && popup.Child != null)
                         {
-                            // 为 ScrollViewer 添加 MouseWheel 事件处理（冒泡阶段，优先级高于 Preview）
-                            void ScrollViewerMouseWheel(object sender, MouseWheelEventArgs e)
+                            // 查找 Popup 中的 ScrollViewer
+                            ScrollViewer? scrollViewer = FindVisualChild<ScrollViewer>(popup.Child);
+                            if (scrollViewer != null)
                             {
-                                // 检查下拉列表是否打开且可以滚动
-                                if (comboBox.IsDropDownOpen && popup.IsOpen)
+                                // 如果内容可以滚动，则处理滚轮事件
+                                if (scrollViewer.ComputedVerticalScrollBarVisibility == Visibility.Visible)
                                 {
-                                    // 如果内容可以滚动，则处理滚轮事件
-                                    if (scrollViewer.ComputedVerticalScrollBarVisibility == Visibility.Visible)
-                                    {
-                                        double offset = scrollViewer.VerticalOffset - (e.Delta / 3.0);
-                                        scrollViewer.ScrollToVerticalOffset(Math.Max(0, Math.Min(offset, scrollViewer.ScrollableHeight)));
-                                        e.Handled = true; // 阻止事件继续冒泡到主界面
-                                    }
+                                    double offset = scrollViewer.VerticalOffset - (e.Delta / 3.0);
+                                    scrollViewer.ScrollToVerticalOffset(Math.Max(0, Math.Min(offset, scrollViewer.ScrollableHeight)));
+                                    e.Handled = true; // 阻止事件继续传播到主界面
                                 }
-                            }
-                            
-                            // 为 ScrollViewer 添加事件处理器
-                            scrollViewer.MouseWheel += ScrollViewerMouseWheel;
-                            
-                            // 同时为 ScrollViewer 添加 PreviewMouseWheel 事件处理（隧道阶段，最早处理）
-                            void ScrollViewerPreviewMouseWheel(object sender, MouseWheelEventArgs e)
-                            {
-                                // 检查下拉列表是否打开且可以滚动
-                                if (comboBox.IsDropDownOpen && popup.IsOpen)
-                                {
-                                    // 如果内容可以滚动，则处理滚轮事件
-                                    if (scrollViewer.ComputedVerticalScrollBarVisibility == Visibility.Visible)
-                                    {
-                                        double offset = scrollViewer.VerticalOffset - (e.Delta / 3.0);
-                                        scrollViewer.ScrollToVerticalOffset(Math.Max(0, Math.Min(offset, scrollViewer.ScrollableHeight)));
-                                        e.Handled = true; // 阻止事件继续传播
-                                    }
-                                }
-                            }
-                            
-                            scrollViewer.PreviewMouseWheel += ScrollViewerPreviewMouseWheel;
-                            
-                            // 为 Popup 的 Child 添加 PreviewMouseWheel 事件处理
-                            // 这样当鼠标在下拉列表上方时，滚轮事件会被优先处理
-                            void PopupChildPreviewMouseWheel(object sender, MouseWheelEventArgs e)
-                            {
-                                // 检查下拉列表是否打开且可以滚动
-                                if (comboBox.IsDropDownOpen && popup.IsOpen)
-                                {
-                                    // 如果内容可以滚动，则处理滚轮事件
-                                    if (scrollViewer.ComputedVerticalScrollBarVisibility == Visibility.Visible)
-                                    {
-                                        double offset = scrollViewer.VerticalOffset - (e.Delta / 3.0);
-                                        scrollViewer.ScrollToVerticalOffset(Math.Max(0, Math.Min(offset, scrollViewer.ScrollableHeight)));
-                                        e.Handled = true; // 阻止事件继续传播
-                                    }
-                                }
-                            }
-                            
-                            // 为 Popup 的 Child 添加事件处理器
-                            if (popup.Child is FrameworkElement childElement)
-                            {
-                                childElement.PreviewMouseWheel += PopupChildPreviewMouseWheel;
-                                
-                                // 当下拉列表关闭时，移除所有事件处理器
-                                comboBox.DropDownClosed += (s, e) =>
-                                {
-                                    scrollViewer.MouseWheel -= ScrollViewerMouseWheel;
-                                    scrollViewer.PreviewMouseWheel -= ScrollViewerPreviewMouseWheel;
-                                    if (childElement != null)
-                                    {
-                                        childElement.PreviewMouseWheel -= PopupChildPreviewMouseWheel;
-                                    }
-                                };
                             }
                         }
                     }
+                    catch
+                    {
+                        // 忽略错误，避免影响其他功能
+                    }
                 }
-                catch
+            }
+            
+            // 移除旧的事件处理器（如果存在），然后添加新的
+            comboBox.PreviewMouseWheel -= ComboBoxPreviewMouseWheel;
+            comboBox.PreviewMouseWheel += ComboBoxPreviewMouseWheel;
+            
+            // 在每次打开下拉列表时重新绑定事件到内部元素
+            comboBox.DropDownOpened += (s, e) =>
+            {
+                // 延迟执行，确保下拉列表已完全渲染
+                comboBox.Dispatcher.BeginInvoke(new System.Action(() =>
                 {
-                    // 忽略错误，避免影响其他功能
-                }
-            }), System.Windows.Threading.DispatcherPriority.Loaded);
+                    try
+                    {
+                        // 查找 ComboBox 的 Popup
+                        Popup? popup = comboBox.Template?.FindName("PART_Popup", comboBox) as Popup;
+                        if (popup?.Child != null)
+                        {
+                            // 查找 Popup 中的 ScrollViewer
+                            ScrollViewer? scrollViewer = FindVisualChild<ScrollViewer>(popup.Child);
+                            if (scrollViewer != null)
+                            {
+                                // 为 ScrollViewer 添加 PreviewMouseWheel 事件处理（隧道阶段，最早处理，优先级最高）
+                                void ScrollViewerPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+                                {
+                                    // 检查下拉列表是否打开且可以滚动
+                                    if (comboBox.IsDropDownOpen && popup.IsOpen)
+                                    {
+                                        // 如果内容可以滚动，则处理滚轮事件
+                                        if (scrollViewer.ComputedVerticalScrollBarVisibility == Visibility.Visible)
+                                        {
+                                            double offset = scrollViewer.VerticalOffset - (e.Delta / 3.0);
+                                            scrollViewer.ScrollToVerticalOffset(Math.Max(0, Math.Min(offset, scrollViewer.ScrollableHeight)));
+                                            e.Handled = true; // 阻止事件继续传播到主界面
+                                        }
+                                    }
+                                }
+                                
+                                // 移除旧的事件处理器（如果存在），然后添加新的
+                                scrollViewer.PreviewMouseWheel -= ScrollViewerPreviewMouseWheel;
+                                scrollViewer.PreviewMouseWheel += ScrollViewerPreviewMouseWheel;
+                                
+                                // 为 ScrollViewer 添加 MouseWheel 事件处理（冒泡阶段，作为备用）
+                                void ScrollViewerMouseWheel(object sender, MouseWheelEventArgs e)
+                                {
+                                    // 检查下拉列表是否打开且可以滚动
+                                    if (comboBox.IsDropDownOpen && popup.IsOpen)
+                                    {
+                                        // 如果内容可以滚动，则处理滚轮事件
+                                        if (scrollViewer.ComputedVerticalScrollBarVisibility == Visibility.Visible)
+                                        {
+                                            double offset = scrollViewer.VerticalOffset - (e.Delta / 3.0);
+                                            scrollViewer.ScrollToVerticalOffset(Math.Max(0, Math.Min(offset, scrollViewer.ScrollableHeight)));
+                                            e.Handled = true; // 阻止事件继续冒泡到主界面
+                                        }
+                                    }
+                                }
+                                
+                                // 移除旧的事件处理器（如果存在），然后添加新的
+                                scrollViewer.MouseWheel -= ScrollViewerMouseWheel;
+                                scrollViewer.MouseWheel += ScrollViewerMouseWheel;
+                                
+                                // 为 Popup 本身添加 PreviewMouseWheel 事件处理（最高优先级）
+                                void PopupPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+                                {
+                                    // 检查下拉列表是否打开
+                                    if (comboBox.IsDropDownOpen && popup.IsOpen)
+                                    {
+                                        // 如果内容可以滚动，则处理滚轮事件
+                                        if (scrollViewer.ComputedVerticalScrollBarVisibility == Visibility.Visible)
+                                        {
+                                            double offset = scrollViewer.VerticalOffset - (e.Delta / 3.0);
+                                            scrollViewer.ScrollToVerticalOffset(Math.Max(0, Math.Min(offset, scrollViewer.ScrollableHeight)));
+                                            e.Handled = true; // 阻止事件继续传播到主界面
+                                        }
+                                    }
+                                }
+                                
+                                // 移除旧的事件处理器（如果存在），然后添加新的
+                                popup.PreviewMouseWheel -= PopupPreviewMouseWheel;
+                                popup.PreviewMouseWheel += PopupPreviewMouseWheel;
+                                
+                                // 为 Popup 的 Child 添加 PreviewMouseWheel 事件处理
+                                if (popup.Child is FrameworkElement childElement)
+                                {
+                                    void PopupChildPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+                                    {
+                                        // 检查下拉列表是否打开且可以滚动
+                                        if (comboBox.IsDropDownOpen && popup.IsOpen)
+                                        {
+                                            // 如果内容可以滚动，则处理滚轮事件
+                                            if (scrollViewer.ComputedVerticalScrollBarVisibility == Visibility.Visible)
+                                            {
+                                                double offset = scrollViewer.VerticalOffset - (e.Delta / 3.0);
+                                                scrollViewer.ScrollToVerticalOffset(Math.Max(0, Math.Min(offset, scrollViewer.ScrollableHeight)));
+                                                e.Handled = true; // 阻止事件继续传播
+                                            }
+                                        }
+                                    }
+                                    
+                                    // 移除旧的事件处理器（如果存在），然后添加新的
+                                    childElement.PreviewMouseWheel -= PopupChildPreviewMouseWheel;
+                                    childElement.PreviewMouseWheel += PopupChildPreviewMouseWheel;
+                                }
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // 忽略错误，避免影响其他功能
+                    }
+                }), System.Windows.Threading.DispatcherPriority.Loaded);
+            };
         }
         
         /// <summary>

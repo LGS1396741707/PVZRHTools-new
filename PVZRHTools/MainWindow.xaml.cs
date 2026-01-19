@@ -263,6 +263,31 @@ namespace PVZRHTools
 
         public void ScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
+            // 检查是否有任何 ComboBox 的下拉列表是打开的，如果有则忽略此事件
+            // 方法1：检查鼠标是否在 Popup 中
+            var source = e.OriginalSource as DependencyObject;
+            if (source != null)
+            {
+                // 向上遍历可视化树，检查是否在 Popup 中
+                var current = source;
+                while (current != null)
+                {
+                    if (current is Popup popup && popup.IsOpen)
+                    {
+                        // 如果鼠标在打开的 Popup 中，不处理此事件，让 Popup 自己处理
+                        return;
+                    }
+                    current = VisualTreeHelper.GetParent(current);
+                }
+            }
+            
+            // 方法2：检查整个窗口是否有打开的 ComboBox（更可靠的方法）
+            if (HasOpenComboBox(this))
+            {
+                // 如果有打开的 ComboBox，不处理此事件
+                return;
+            }
+            
             e.Handled = true;
             
             // 获取 ScrollViewer
@@ -295,6 +320,39 @@ namespace PVZRHTools
             
             if (!_scrollTimer.IsEnabled)
                 _scrollTimer.Start();
+        }
+
+        /// <summary>
+        /// 检查窗口是否有打开的 ComboBox 下拉列表
+        /// </summary>
+        private static bool HasOpenComboBox(DependencyObject parent)
+        {
+            if (parent == null) return false;
+            
+            // 检查当前元素是否是 ComboBox 且下拉列表打开
+            if (parent is System.Windows.Controls.ComboBox comboBox && comboBox.IsDropDownOpen)
+            {
+                return true;
+            }
+            
+            // 检查当前元素是否是 HandyControl 的 ComboBox 且下拉列表打开
+            if (parent is HandyControl.Controls.ComboBox hcComboBox && hcComboBox.IsDropDownOpen)
+            {
+                return true;
+            }
+            
+            // 递归检查子元素
+            int childrenCount = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < childrenCount; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (HasOpenComboBox(child))
+                {
+                    return true;
+                }
+            }
+            
+            return false;
         }
 
         private void ScrollTimer_Tick(object? sender, EventArgs e)
