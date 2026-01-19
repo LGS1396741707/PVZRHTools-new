@@ -136,6 +136,8 @@
     <s:String x:Key="Tab1.Page7.SpawnPetGargantuar.Tooltip">在鼠标位置召唤一个迷你黑曜石巨人宠物</s:String>
     <s:String x:Key="Tab1.Page7.SpawnPetFootball">召唤迷你黑橄榄将军</s:String>
     <s:String x:Key="Tab1.Page7.SpawnPetFootball.Tooltip">在鼠标位置召唤一个迷你黑橄榄将军宠物</s:String>
+    <s:String x:Key="Tab1.Page7.SpawnPetSnowBoss">召唤迷你雪皇</s:String>
+    <s:String x:Key="Tab1.Page7.SpawnPetSnowBoss.Tooltip">在鼠标位置召唤一个迷你雪皇宠物</s:String>
     <s:String x:Key="Tab1.Page7.RandomBullet">随机子弹</s:String>
     <s:String x:Key="Tab1.Page7.RandomBullet.Tooltip">启用后植物发射的子弹类型随机</s:String>
     <s:String x:Key="Tab1.Page7.RandomUpgradeMode">随机升级模式</s:String>

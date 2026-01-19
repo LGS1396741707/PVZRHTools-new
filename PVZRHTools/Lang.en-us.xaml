@@ -130,6 +130,8 @@
     <s:String x:Key="Tab1.Page7.SpawnPetGargantuar.Tooltip">Spawn a mini obsidian gargantuar pet at mouse position</s:String>
     <s:String x:Key="Tab1.Page7.SpawnPetFootball">Spawn Pet Football</s:String>
     <s:String x:Key="Tab1.Page7.SpawnPetFootball.Tooltip">Spawn a mini black olive general pet at mouse position</s:String>
+    <s:String x:Key="Tab1.Page7.SpawnPetSnowBoss">Spawn Pet Snow Boss</s:String>
+    <s:String x:Key="Tab1.Page7.SpawnPetSnowBoss.Tooltip">Spawn a mini snow boss pet at mouse position</s:String>
     <s:String x:Key="Tab1.Page7.RandomBullet">Random Bullet</s:String>
     <s:String x:Key="Tab1.Page7.RandomBullet.Tooltip">When enabled, plants shoot random bullet types</s:String>
     <s:String x:Key="Tab1.Page7.RandomUpgradeMode">Random Upgrade Mode</s:String>

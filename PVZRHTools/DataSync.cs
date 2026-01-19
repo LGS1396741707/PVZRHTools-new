@@ -41,7 +41,78 @@ public class DataSync
         try
         {
             if (string.IsNullOrWhiteSpace(data) || string.IsNullOrEmpty(data)) return;
-            var json = JsonNode.Parse(data)!.AsObject();
+            
+            // 尝试解析 JSON，如果失败则尝试分割多个 JSON 对象
+            JsonObject? json = null;
+            try
+            {
+                json = JsonNode.Parse(data)!.AsObject();
+            }
+            catch (JsonException ex)
+            {
+                // 如果解析失败，尝试查找第一个完整的 JSON 对象
+                // 通过计算大括号的匹配来找到 JSON 边界
+                int braceCount = 0;
+                int startIndex = 0;
+                bool foundStart = false;
+                
+                for (int i = 0; i < data.Length; i++)
+                {
+                    if (data[i] == '{')
+                    {
+                        if (!foundStart)
+                        {
+                            startIndex = i;
+                            foundStart = true;
+                        }
+                        braceCount++;
+                    }
+                    else if (data[i] == '}')
+                    {
+                        braceCount--;
+                        if (braceCount == 0 && foundStart)
+                        {
+                            // 找到了一个完整的 JSON 对象
+                            try
+                            {
+                                var partialData = data.Substring(startIndex, i - startIndex + 1);
+                                json = JsonNode.Parse(partialData)!.AsObject();
+                                
+                                // 如果还有剩余数据，递归处理
+                                if (i + 1 < data.Length)
+                                {
+                                    var remainingData = data.Substring(i + 1).TrimStart();
+                                    if (!string.IsNullOrEmpty(remainingData))
+                                    {
+                                        ProcessData(remainingData);
+                                    }
+                                }
+                                break;
+                            }
+                            catch
+                            {
+                                // 如果这个片段也解析失败，记录错误并继续
+                                foundStart = false;
+                                braceCount = 0;
+                            }
+                        }
+                    }
+                }
+                
+                // 如果仍然无法解析，记录错误信息
+                if (json == null)
+                {
+                    File.WriteAllText("./ModifierJsonError.txt", 
+                        $"JSON Parse Error: {ex.Message}\n" +
+                        $"Data length: {data.Length}\n" +
+                        $"Data preview (first 500 chars): {data.Substring(0, Math.Min(500, data.Length))}\n" +
+                        $"Full data: {data}");
+                    throw; // 重新抛出原始异常
+                }
+            }
+            
+            if (json == null) return;
+            
             switch ((int)json["ID"]!)
             {
                 case 3:

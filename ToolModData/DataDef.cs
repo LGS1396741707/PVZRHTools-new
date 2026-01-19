@@ -227,6 +227,11 @@ public struct InGameActions : ISyncData
     /// 召唤迷你黑橄榄将军
     /// </summary>
     public bool? SpawnPetFootball { get; set; }
+    
+    /// <summary>
+    /// 召唤迷你雪皇
+    /// </summary>
+    public bool? PetSnowBoss { get; set; }
 }
 
 public struct InGameHotkeys : ISyncData

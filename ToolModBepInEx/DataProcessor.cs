@@ -1423,6 +1423,13 @@ all");
                 var mousePos = Mouse.Instance.transform.position;
                 MiniPet.SetPet(Board.Instance, new Vector2(mousePos.x, mousePos.y), PetType.PetFootball);
             }
+
+            // 召唤迷你雪皇
+            if (iga.PetSnowBoss == true && Board.Instance != null && Mouse.Instance != null)
+            {
+                var mousePos = Mouse.Instance.transform.position;
+                MiniPet.SetPet(Board.Instance, new Vector2(mousePos.x, mousePos.y), PetType.PetSnowBoss);
+            }
         }
 
         if (data is GameModes ga)

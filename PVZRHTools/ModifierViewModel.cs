@@ -401,6 +401,12 @@ public partial class ModifierViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public void SpawnPetSnowBoss()
+    {
+        App.DataSync.Value.SendData(new InGameActions { PetSnowBoss = true });
+    }
+
+    [RelayCommand]
     public void BulletDamage()
     {
         App.DataSync.Value.SendData(new ValueProperties
