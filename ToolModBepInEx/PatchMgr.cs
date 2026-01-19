@@ -1574,10 +1574,10 @@ public static class InGameTextPatch
                 var count = Math.Min(InGameAdvBuffs.Length, travelMgr.advancedUpgrades.Count);
                 for (var i = 0; i < count; i++)
                     if (InGameAdvBuffs[i] != travelMgr.advancedUpgrades[i])
-            {
-                SyncInGameBuffs();
-                return;
-            }
+                    {
+                        SyncInGameBuffs();
+                        return;
+                    }
             }
 
             if (travelMgr.ultimateUpgrades != null && InGameUltiBuffs != null)
@@ -1588,9 +1588,9 @@ public static class InGameTextPatch
                     var count = Math.Min(InGameUltiBuffs.Length, ultiArray.Length);
                     for (var i = 0; i < count; i++)
                         if (InGameUltiBuffs[i] != ultiArray[i])
-            {
-                SyncInGameBuffs();
-                return;
+                        {
+                            SyncInGameBuffs();
+                            return;
                         }
                 }
             }
@@ -1598,7 +1598,7 @@ public static class InGameTextPatch
         catch (System.Exception ex)
         {
             MLogger?.LogError($"[PVZRHTools] InGameTextPatch 异常: {ex.Message}\n{ex.StackTrace}");
-            }
+        }
     }
 }
 
@@ -4613,9 +4613,9 @@ public class PatchMgr : MonoBehaviour
                 // 修复数组越界：确保访问本地数组时不超过其长度
                 var count = Math.Min(advs.Count, AdvBuffs.Length);
                 for (var i = 0; i < count; i++)
-            {
-                advs[i] = AdvBuffs[i] || advs[i];
-                yield return null;
+                {
+                    advs[i] = AdvBuffs[i] || advs[i];
+                    yield return null;
                 }
             }
 
@@ -4625,9 +4625,9 @@ public class PatchMgr : MonoBehaviour
                 // 修复数组越界：确保访问本地数组时不超过其长度
                 var count = Math.Min(ultis.Count, UltiBuffs.Length);
                 for (var i = 0; i < count; i++)
-            {
-                ultis[i] = UltiBuffs[i] || ultis[i] is 1 ? 1 : 0;
-                yield return null;
+                {
+                    ultis[i] = UltiBuffs[i] || ultis[i] is 1 ? 1 : 0;
+                    yield return null;
                 }
             }
 
@@ -4637,9 +4637,9 @@ public class PatchMgr : MonoBehaviour
                 // 修复数组越界：确保访问本地数组时不超过其长度
                 var count = Math.Min(deb.Count, Debuffs.Length);
                 for (var i = 0; i < count; i++)
-            {
-                deb[i] = Debuffs[i] || deb[i];
-                yield return null;
+                {
+                    deb[i] = Debuffs[i] || deb[i];
+                    yield return null;
                 }
             }
             
@@ -4747,8 +4747,8 @@ public class PatchMgr : MonoBehaviour
                 return;
             }
             
-        DataSync.Instance.Value.SendData(new SyncTravelBuff
-        {
+            DataSync.Instance.Value.SendData(new SyncTravelBuff
+            {
                 AdvInGame = [.. travelMgr.advancedUpgrades],
                 UltiInGame = [.. GetBoolArray(travelMgr.ultimateUpgrades)],
                 DebuffsInGame = [.. travelMgr.debuff]
