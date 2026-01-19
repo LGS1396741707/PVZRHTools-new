@@ -4642,7 +4642,6 @@ public class PatchMgr : MonoBehaviour
                         boardTag.isTravel = true;
                         boardTag.enableTravelBuff = true;
                         Board.Instance.boardTag = boardTag;
-                        MLogger?.LogInfo("[PVZRHTools] PostInitBoard: 已设置 BoardTag 标志，词条效果应该会生效");
                     }
                 }
             }
@@ -4799,7 +4798,6 @@ public class PatchMgr : MonoBehaviour
                         boardTag.isTravel = true;
                         boardTag.enableTravelBuff = true;
                         Board.Instance.boardTag = boardTag;
-                        MLogger?.LogInfo("[PVZRHTools] 已设置 BoardTag 标志，词条效果应该会生效");
                     }
                 }
             }
