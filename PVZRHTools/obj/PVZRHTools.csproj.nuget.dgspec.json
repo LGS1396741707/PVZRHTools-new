@@ -1,0 +1,159 @@
+{
+  "format": 1,
+  "restore": {
+    "D:\\Web\\二创\\插件项目Code\\PVZRHTools\\PVZRHTools\\PVZRHTools.csproj": {}
+  },
+  "projects": {
+    "D:\\Web\\二创\\插件项目Code\\PVZRHTools\\PVZRHTools\\PVZRHTools.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\Web\\二创\\插件项目Code\\PVZRHTools\\PVZRHTools\\PVZRHTools.csproj",
+        "projectName": "PVZRHTools",
+        "projectPath": "D:\\Web\\二创\\插件项目Code\\PVZRHTools\\PVZRHTools\\PVZRHTools.csproj",
+        "packagesPath": "C:\\Users\\mokai\\.nuget\\packages\\",
+        "outputPath": "D:\\Web\\二创\\插件项目Code\\PVZRHTools\\PVZRHTools\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\mokai\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0-windows"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0-windows7.0": {
+            "targetAlias": "net8.0-windows",
+            "projectReferences": {
+              "D:\\Web\\二创\\插件项目Code\\PVZRHTools\\ToolModData\\ToolModData.csproj": {
+                "projectPath": "D:\\Web\\二创\\插件项目Code\\PVZRHTools\\ToolModData\\ToolModData.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net8.0-windows7.0": {
+          "targetAlias": "net8.0-windows",
+          "dependencies": {
+            "CommunityToolkit.Mvvm": {
+              "target": "Package",
+              "version": "[8.4.0, )"
+            },
+            "FastHotKeyForWPF": {
+              "target": "Package",
+              "version": "[2.4.0, )"
+            },
+            "HandyControl": {
+              "target": "Package",
+              "version": "[3.5.1, )"
+            },
+            "Microsoft.Extensions.DependencyInjection": {
+              "target": "Package",
+              "version": "[9.0.1, )"
+            },
+            "System.Management": {
+              "target": "Package",
+              "version": "[10.0.0-preview.7.25380.108, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            },
+            "Microsoft.WindowsDesktop.App.WPF": {
+              "privateAssets": "none"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.101/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "D:\\Web\\二创\\插件项目Code\\PVZRHTools\\ToolModData\\ToolModData.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\Web\\二创\\插件项目Code\\PVZRHTools\\ToolModData\\ToolModData.csproj",
+        "projectName": "ToolModData",
+        "projectPath": "D:\\Web\\二创\\插件项目Code\\PVZRHTools\\ToolModData\\ToolModData.csproj",
+        "packagesPath": "C:\\Users\\mokai\\.nuget\\packages\\",
+        "outputPath": "D:\\Web\\二创\\插件项目Code\\PVZRHTools\\ToolModData\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\mokai\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net6.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net6.0": {
+            "targetAlias": "net6.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net6.0": {
+          "targetAlias": "net6.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.101\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
