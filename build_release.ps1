@@ -61,6 +61,12 @@ $FilesToCopy = @(
 )
 
 foreach ($file in $FilesToCopy) {
+    # 排除 interop 相关文件
+    if ($file -match "interop|Interop") {
+        Write-Host "  Skipped: $file (interop file)"
+        continue
+    }
+    
     $SourceFile = Join-Path $PVZRHToolsOutputDir $file
     if (Test-Path $SourceFile) {
         Copy-Item $SourceFile -Destination $PVZRHToolsReleaseDir -Force
@@ -68,12 +74,17 @@ foreach ($file in $FilesToCopy) {
     }
 }
 
-# Copy runtimes folder
+# Copy runtimes folder (排除 interop 文件)
 $RuntimesSource = Join-Path $PVZRHToolsOutputDir "runtimes"
 $RuntimesDest = Join-Path $PVZRHToolsReleaseDir "runtimes"
 if (Test-Path $RuntimesSource) {
+    # 先复制整个文件夹
     Copy-Item $RuntimesSource -Destination $PVZRHToolsReleaseDir -Recurse -Force
-    Write-Host "  Copied: runtimes folder"
+    # 然后删除其中的 interop 文件
+    Get-ChildItem -Path $RuntimesDest -Recurse -File | Where-Object {
+        $_.Name -match "interop|Interop"
+    } | Remove-Item -Force
+    Write-Host "  Copied: runtimes folder (excluding interop files)"
 }
 
 Write-Host ""

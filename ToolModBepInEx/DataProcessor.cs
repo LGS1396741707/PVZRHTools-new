@@ -870,6 +870,18 @@ all");
                     // 检查游戏是否已初始化
                     if (Board.Instance != null && Board.Instance.theMaxWave > 0)
                     {
+                        // 优先尝试“按原生刷新逻辑”触发下一波：把倒计时归零
+                        // 说明：3.3.0 中存在 timeUntilNextWave / hugeWaveCountDown 两个计时器
+                        // 将其置为 0f 一般会在下一帧由 Board 的更新逻辑自然触发刷怪/大波事件
+                        try
+                        {
+                            Board.Instance.timeUntilNextWave = 0f;
+                            Board.Instance.hugeWaveCountDown = 0f;
+                            // 尝试立刻跑一次刷怪更新（失败也不影响回退逻辑）
+                            Board.Instance.NewZombieUpdate();
+                        }
+                        catch { }
+
                         // 如果波数还没开始（theWave == 0），显示关卡进度条并开始第一波
                         if (Board.Instance.theWave == 0)
                         {
