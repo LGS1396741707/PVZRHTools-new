@@ -1898,7 +1898,7 @@ public partial class ModifierViewModel : ObservableObject
 
     [ObservableProperty] public partial bool TopMostSprite { get; set; }
 
-    [ObservableProperty] public partial bool EnableAnimations { get; set; } = true;
+    [ObservableProperty] public partial bool EnableAnimations { get; set; } = false;
 
     [ObservableProperty] public partial BindingList<TravelBuffVM> TravelBuffs { get; set; }
 
