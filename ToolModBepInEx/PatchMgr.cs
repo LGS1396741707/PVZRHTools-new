@@ -4851,6 +4851,25 @@ public class PatchMgr : MonoBehaviour
         {
             travelMgr = GameAPP.board.GetComponent<TravelMgr>();
         }
+        
+        // 关键增强：即使未开启“词条管理器/旅行系统”，也尽量创建 TravelMgr 以支持词条修改生效
+        // 参考 Modified-Plus 的做法：GetOrAdd TravelMgr + 设置 boardTag.isTravel/enableTravelBuff
+        if (travelMgr == null && InGame() && GameAPP.gameAPP != null)
+        {
+            try
+            {
+                travelMgr = GameAPP.gameAPP.GetComponent<TravelMgr>();
+                if (travelMgr == null)
+                {
+                    travelMgr = GameAPP.gameAPP.AddComponent<TravelMgr>();
+                    MLogger?.LogInfo("[PVZRHTools] ResolveTravelMgr: 已自动创建 TravelMgr（未开启词条管理器也可修改词条）");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                MLogger?.LogWarning($"[PVZRHTools] ResolveTravelMgr: 自动创建 TravelMgr 失败: {ex.Message}");
+            }
+        }
         return travelMgr;
     }
 
