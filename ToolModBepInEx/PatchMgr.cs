@@ -3860,6 +3860,77 @@ public static class ZombieImmuneSetEmberedPatch
 }
 
 /// <summary>
+/// 僵尸免疫余烬：拦截新余烬子弹（Bullet_doom_ulti）单体结算
+/// 原逻辑：ActionOnZombie 中会 SetEmbered + 按寒冷/红温/中毒追加伤害
+/// 这里改为仅造成一次基础伤害，彻底跳过附加效果。
+/// </summary>
+[HarmonyPatch(typeof(Bullet_doom_ulti), "ActionOnZombie")]
+public static class ZombieImmuneEmberedBulletDoomUltiActionPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.First)]
+    public static bool Prefix(Bullet_doom_ulti __instance, Zombie zombie)
+    {
+        if (!ZombieImmuneAllDebuffs && !ZombieImmuneEmbered) return true;
+        try
+        {
+            if (__instance == null || zombie == null) return true;
+
+            int damage = __instance._damage;
+            if (damage <= 0) damage = 1;
+            PlantType fromType = __instance.fromType;
+
+            zombie.TakeDamage(DmgType.Normal, damage, fromType, false);
+            return false; // 阻止原方法，避免余烬/状态附加
+        }
+        catch { return true; }
+    }
+}
+
+/// <summary>
+/// 僵尸免疫余烬：拦截新余烬子弹（Bullet_doom_ulti）范围结算（theStatus==6）
+/// 改为朴素范围伤害，不触发余烬/寒冷×4/红温爆炸/毒伤追加。
+/// </summary>
+[HarmonyPatch(typeof(Bullet_doom_ulti), "AttackZombies")]
+public static class ZombieImmuneEmberedBulletDoomUltiAttackPatch
+{
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.First)]
+    public static bool Prefix(Bullet_doom_ulti __instance)
+    {
+        if (!ZombieImmuneAllDebuffs && !ZombieImmuneEmbered) return true;
+        try
+        {
+            if (__instance == null) return true;
+            var board = Board.Instance;
+            if (board == null) return true;
+
+            int damage = __instance._damage;
+            if (damage <= 0) damage = 1;
+            PlantType fromType = __instance.fromType;
+            var pos = __instance.transform.position;
+            const float range = 4f;
+
+            foreach (var z in board.zombieArray)
+            {
+                if (z == null) continue;
+                if (!z.gameObject.activeInHierarchy) continue;
+
+                var zp = z.transform.position;
+                if (UnityEngine.Vector2.Distance(new UnityEngine.Vector2(pos.x, pos.y),
+                                                 new UnityEngine.Vector2(zp.x, zp.y)) > range)
+                    continue;
+
+                z.TakeDamage(DmgType.Normal, damage, fromType, false);
+            }
+
+            return false; // 阻止原方法
+        }
+        catch { return true; }
+    }
+}
+
+/// <summary>
 /// 僵尸免疫吞噬补丁 - Chomper.Chomp
 /// 这是实际执行吞噬僵尸的方法
 /// </summary>
