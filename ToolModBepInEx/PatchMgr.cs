@@ -4673,6 +4673,35 @@ public class PatchMgr : MonoBehaviour
         }
         
         Board.Instance.freeCD = FreeCD;
+        // 兜底：如果当前关卡没有小推车，则自动生成一次，避免“开局无推车”
+        try
+        {
+            var mowers = Board.Instance.mowerArray;
+            var missing = mowers == null || mowers.Count == 0;
+            if (!missing && mowers != null)
+            {
+                var allNull = true;
+                for (int i = 0; i < mowers.Count; i++)
+                {
+                    if (mowers[i] != null)
+                    {
+                        allNull = false;
+                        break;
+                    }
+                }
+                missing = allNull;
+            }
+
+            if (missing && GameAPP.board != null)
+            {
+                var initBoard = GameAPP.board.GetComponent<InitBoard>();
+                initBoard?.InitMower();
+            }
+        }
+        catch (System.Exception ex)
+        {
+            MLogger?.LogWarning($"[PVZRHTools] PostInitBoard 自动生成小推车失败: {ex.Message}");
+        }
         yield return null;
         if (!(GameAPP.theBoardType == (LevelType)3 && Board.Instance.theCurrentSurvivalRound != 1))
         {

@@ -295,6 +295,39 @@ public class DataProcessor : MonoBehaviour
 
         if (data is InGameActions iga)
         {
+            // 当切换关卡或 Board 不存在时重置本地状态
+            if (Board.Instance == null) _mowerEnsured = false;
+
+            // 兜底：若当前关卡小推车缺失，则自动补齐一次（不清除现有推车）
+            if (!_mowerEnsured && Board.Instance != null && GameAPP.board != null)
+            {
+                try
+                {
+                    var mowers = Board.Instance.mowerArray;
+                    var missing = mowers == null || mowers.Count == 0;
+                    if (!missing && mowers != null)
+                    {
+                        var allNull = true;
+                        for (int i = 0; i < mowers.Count; i++)
+                        {
+                            if (mowers[i] != null)
+                            {
+                                allNull = false;
+                                break;
+                            }
+                        }
+                        missing = allNull;
+                    }
+                    if (missing)
+                    {
+                        var initBoard = GameAPP.board.GetComponent<InitBoard>();
+                        initBoard?.InitMower();
+                        _mowerEnsured = true;
+                    }
+                }
+                catch { /* ignore */ }
+            }
+
             if (iga.ZombieSeaEnabled is not null
                 && iga.ZombieSeaCD is not null
                 && iga.ZombieSeaTypes is not null
@@ -1355,7 +1388,8 @@ all");
                 }
             }
 
-            if (iga.StartMower is not null && Board.Instance != null && Board.Instance.mowerArray != null)
+            // 仅当显式请求启动推车时才执行，避免接收 false/默认值时误触发
+            if (iga.StartMower == true && Board.Instance != null && Board.Instance.mowerArray != null)
             {
                 // 只启动 Board.Instance.mowerArray 中的小推车，避免启动预制体
                 foreach (var mower in Board.Instance.mowerArray)
@@ -1368,7 +1402,8 @@ all");
                 }
             }
 
-            if (iga.CreateMower is not null && GameAPP.board != null)
+            // 仅当显式请求生成推车时才执行，避免默认 false/未设置时误清推车
+            if (iga.CreateMower == true && GameAPP.board != null)
             {
                 // 先清除现有的小推车，避免重复生成导致的问题
                 if (Board.Instance != null && Board.Instance.mowerArray != null)
@@ -1536,4 +1571,6 @@ all");
             return true;
         });
     }
+
+    private static bool _mowerEnsured = false;
 }
