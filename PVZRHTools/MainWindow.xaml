@@ -218,7 +218,10 @@
                                               Style="{DynamicResource ComboBoxExtend}" Width="150"
                                               HorizontalAlignment="Left" VerticalContentAlignment="Center"
                                               Margin="-34,0,0,0" VerticalAlignment="Center" Height="30"
-                                              IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
+                                              IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value"
+                                              Loaded="PlantType_Loaded" GotFocus="PlantType_GotFocus" LostFocus="PlantType_LostFocus"
+                                              PreviewKeyDown="PlantType_PreviewKeyDown" PreviewTextInput="PlantType_PreviewTextInput"
+                                              KeyDown="PlantType_KeyDown" TextInput="PlantType_TextInput" />
                                     <Button x:Name="CreateCard" Content="{DynamicResource Tab2.Page1.CreateCard}"
                                             Width="122" Command="{Binding CreateCardCommand}" Height="30" />
                                     <Button x:Name="SimplePresents"
@@ -237,7 +240,10 @@
                                                   VerticalAlignment="Center" Width="150" SelectedValuePath="Key"
                                                   DisplayMemberPath="Value" ItemsSource="{Binding Zombies}"
                                                   SelectedValue="{Binding ZombieType}"
-                                                  IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
+                                                  IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value"
+                                                  Loaded="ZombieType_Loaded" GotFocus="ZombieType_GotFocus" LostFocus="ZombieType_LostFocus"
+                                                  PreviewKeyDown="ZombieType_PreviewKeyDown" PreviewTextInput="ZombieType_PreviewTextInput"
+                                                  KeyDown="ZombieType_KeyDown" TextInput="ZombieType_TextInput" />
                                     </hc:ElementGroup>
                                     <CheckBox x:Name="IsMindCtrl" Content="{DynamicResource Tab2.Page1.IsMindCtrl}"
                                               Height="30" Foreground="#FF333333" BorderThickness="2,2,2,2"
@@ -1658,6 +1664,83 @@
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+            </TabItem>
+            
+            <!-- Tab11: 检索分区 -->
+            <TabItem Header="{DynamicResource Tab11.Header}">
+                <Border BorderBrush="#FF87CEEB" BorderThickness="2" CornerRadius="8" Padding="15" Margin="10">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Orientation="Vertical">
+                            <!-- 搜索框 -->
+                            <StackPanel Orientation="Vertical" Margin="0,0,0,20">
+                                <Label Content="搜索关键词" FontWeight="Bold" FontSize="14" Margin="0,0,0,10" />
+                                <TextBox x:Name="SearchBox" 
+                                         Height="35" 
+                                         FontSize="14"
+                                         TextChanged="SearchBox_TextChanged"
+                                         VerticalContentAlignment="Center"
+                                         Padding="10,0">
+                                    <TextBox.Style>
+                                        <Style TargetType="TextBox">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="TextBox">
+                                                        <Border Background="{TemplateBinding Background}"
+                                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                                CornerRadius="4">
+                                                            <ScrollViewer x:Name="PART_ContentHost" Margin="10,0" />
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </TextBox.Style>
+                                </TextBox>
+                            </StackPanel>
+                            
+                            <!-- 搜索结果 -->
+                            <StackPanel Orientation="Vertical">
+                                <Label Content="搜索结果" FontWeight="Bold" FontSize="14" Margin="0,0,0,10" />
+                                
+                                <!-- 植物结果 -->
+                                <Expander x:Name="PlantsExpander" Header="{DynamicResource Tab11.Results.Plants}" Margin="0,0,0,10">
+                                    <ListBox x:Name="PlantsResultsListBox" 
+                                             MaxHeight="200" 
+                                             ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                                </Expander>
+                                
+                                <!-- 僵尸结果 -->
+                                <Expander x:Name="ZombiesExpander" Header="{DynamicResource Tab11.Results.Zombies}" Margin="0,0,0,10">
+                                    <ListBox x:Name="ZombiesResultsListBox" 
+                                             MaxHeight="200" 
+                                             ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                                </Expander>
+                                
+                                <!-- 词条结果 -->
+                                <Expander x:Name="BuffsExpander" Header="{DynamicResource Tab11.Results.Buffs}" Margin="0,0,0,10">
+                                    <ListBox x:Name="BuffsResultsListBox" 
+                                             MaxHeight="200" 
+                                             ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                                </Expander>
+                                
+                                <!-- 子弹结果 -->
+                                <Expander x:Name="BulletsExpander" Header="{DynamicResource Tab11.Results.Bullets}" Margin="0,0,0,10">
+                                    <ListBox x:Name="BulletsResultsListBox" 
+                                             MaxHeight="200" 
+                                             ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                                </Expander>
+                                
+                                <!-- 物品结果 -->
+                                <Expander x:Name="ItemsExpander" Header="{DynamicResource Tab11.Results.Items}" Margin="0,0,0,10">
+                                    <ListBox x:Name="ItemsResultsListBox" 
+                                             MaxHeight="200" 
+                                             ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                                </Expander>
                             </StackPanel>
                         </StackPanel>
                     </ScrollViewer>

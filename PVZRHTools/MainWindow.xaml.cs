@@ -902,6 +902,462 @@ namespace PVZRHTools
         }
 
         /// <summary>
+        /// 查找可视化树中的子元素
+        /// </summary>
+        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null) return null;
+            
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T result)
+                    return result;
+                
+                var childOfChild = FindVisualChild<T>(child);
+                if (childOfChild != null)
+                    return childOfChild;
+            }
+            return null;
+        }
+
+        // 存储定时器用于定期检查Text变化
+        private System.Windows.Threading.DispatcherTimer? _plantTypeSearchTimer;
+        private System.Windows.Threading.DispatcherTimer? _zombieTypeSearchTimer;
+        private string _lastPlantSearchText = "";
+        private string _lastZombieSearchText = "";
+        
+        // 存储CollectionViewSource用于过滤
+        private System.Windows.Data.CollectionViewSource? _plantTypeCollectionView;
+        private System.Windows.Data.CollectionViewSource? _zombieTypeCollectionView;
+
+        /// <summary>
+        /// PlantType ComboBox的Loaded事件处理，设置搜索功能
+        /// </summary>
+        private void PlantType_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is ComboBox comboBox && DataContext is ModifierViewModel vm)
+            {
+                // 创建CollectionViewSource用于过滤
+                _plantTypeCollectionView = new System.Windows.Data.CollectionViewSource
+                {
+                    Source = vm.Plants2
+                };
+                
+                // 延迟查找内部TextBox，确保它已经创建
+                comboBox.Dispatcher.BeginInvoke(new System.Action(() =>
+                {
+                    // 尝试查找内部TextBox
+                    var textBox = FindVisualChild<System.Windows.Controls.TextBox>(comboBox);
+                    if (textBox != null)
+                    {
+                        // 直接订阅TextBox的TextChanged事件
+                        textBox.TextChanged += (s, args) =>
+                        {
+                            if (s is System.Windows.Controls.TextBox tb)
+                            {
+                                FilterPlantType(comboBox, tb.Text);
+                            }
+                        };
+                    }
+                    
+                    // 同时创建定时器作为备用方案
+                    _plantTypeSearchTimer = new System.Windows.Threading.DispatcherTimer
+                    {
+                        Interval = TimeSpan.FromMilliseconds(30) // 每30ms检查一次，更频繁
+                    };
+                    _plantTypeSearchTimer.Tick += (s, args) =>
+                    {
+                        string text = comboBox.Text ?? "";
+                        FilterPlantType(comboBox, text);
+                    };
+                    _plantTypeSearchTimer.Start();
+                }), System.Windows.Threading.DispatcherPriority.Loaded);
+            }
+        }
+
+        /// <summary>
+        /// PlantType ComboBox的GotFocus事件处理
+        /// </summary>
+        private void PlantType_GotFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is ComboBox comboBox && _plantTypeSearchTimer != null)
+            {
+                _plantTypeSearchTimer.Start();
+            }
+        }
+
+        /// <summary>
+        /// PlantType ComboBox的LostFocus事件处理
+        /// </summary>
+        private void PlantType_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (_plantTypeSearchTimer != null)
+            {
+                _plantTypeSearchTimer.Stop();
+            }
+        }
+
+        /// <summary>
+        /// PlantType ComboBox的PreviewKeyDown事件处理
+        /// </summary>
+        private void PlantType_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (sender is ComboBox comboBox)
+            {
+                // 延迟执行过滤，等待文本更新
+                comboBox.Dispatcher.BeginInvoke(new System.Action(() =>
+                {
+                    FilterPlantType(comboBox, null);
+                }), System.Windows.Threading.DispatcherPriority.Input);
+            }
+        }
+
+        /// <summary>
+        /// PlantType ComboBox的PreviewTextInput事件处理
+        /// </summary>
+        private void PlantType_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+        {
+            if (sender is ComboBox comboBox)
+            {
+                // 获取即将输入的文本
+                string newText = (comboBox.Text ?? "") + e.Text;
+                // 延迟执行过滤，等待文本更新
+                comboBox.Dispatcher.BeginInvoke(new System.Action(() =>
+                {
+                    FilterPlantType(comboBox, newText);
+                }), System.Windows.Threading.DispatcherPriority.Input);
+            }
+        }
+
+        /// <summary>
+        /// PlantType ComboBox的KeyDown事件处理
+        /// </summary>
+        private void PlantType_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (sender is ComboBox comboBox)
+            {
+                // 延迟执行过滤，等待文本更新
+                comboBox.Dispatcher.BeginInvoke(new System.Action(() =>
+                {
+                    FilterPlantType(comboBox, null);
+                }), System.Windows.Threading.DispatcherPriority.Input);
+            }
+        }
+
+        /// <summary>
+        /// PlantType ComboBox的TextInput事件处理
+        /// </summary>
+        private void PlantType_TextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+        {
+            if (sender is ComboBox comboBox)
+            {
+                // 获取即将输入的文本
+                string newText = (comboBox.Text ?? "") + e.Text;
+                // 延迟执行过滤，等待文本更新
+                comboBox.Dispatcher.BeginInvoke(new System.Action(() =>
+                {
+                    FilterPlantType(comboBox, newText);
+                }), System.Windows.Threading.DispatcherPriority.Input);
+            }
+        }
+
+        /// <summary>
+        /// 过滤PlantType列表
+        /// </summary>
+        private void FilterPlantType(ComboBox comboBox, string? currentText = null)
+        {
+            if (DataContext is not ModifierViewModel vm) return;
+
+            // 如果没有提供文本，尝试获取
+            if (currentText == null)
+            {
+                // 方法1: 直接使用ComboBox的Text属性
+                try
+                {
+                    currentText = comboBox.Text ?? "";
+                }
+                catch
+                {
+                    // 方法2: 查找内部TextBox
+                    var textBox = FindVisualChild<System.Windows.Controls.TextBox>(comboBox);
+                    if (textBox != null)
+                    {
+                        currentText = textBox.Text ?? "";
+                    }
+                    else
+                    {
+                        currentText = "";
+                    }
+                }
+            }
+
+            // 如果文本没有变化，不执行过滤
+            if (currentText == _lastPlantSearchText) return;
+            _lastPlantSearchText = currentText;
+
+            string searchText = currentText.Trim();
+
+            // 如果搜索文本为空，恢复原始ItemsSource，让系统自带搜索处理
+            if (string.IsNullOrEmpty(searchText))
+            {
+                // 不设置ItemsSource，让系统恢复
+                return;
+            }
+
+            // 检查是否包含非ASCII字符（中文等），如果只包含数字和ASCII字符，让系统自带搜索处理
+            bool containsNonAscii = false;
+            foreach (char c in searchText)
+            {
+                if (c > 127)
+                {
+                    containsNonAscii = true;
+                    break;
+                }
+            }
+
+            // 如果只包含ASCII字符（可能是纯数字ID），不进行自定义过滤，让系统处理
+            if (!containsNonAscii)
+            {
+                return;
+            }
+
+            // 包含中文等非ASCII字符，进行自定义过滤
+            var filtered = new Dictionary<int, string>();
+            foreach (var kvp in vm.Plants2)
+            {
+                // 支持搜索ID（数字）和名称（中文）
+                if (kvp.Key.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                    kvp.Value.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                {
+                    filtered.Add(kvp.Key, kvp.Value);
+                }
+            }
+
+            // 更新ItemsSource
+            comboBox.ItemsSource = filtered;
+
+            // 如果过滤后有结果，自动打开下拉列表
+            if (filtered.Count > 0)
+            {
+                comboBox.IsDropDownOpen = true;
+            }
+        }
+
+        /// <summary>
+        /// ZombieType ComboBox的Loaded事件处理，设置搜索功能
+        /// </summary>
+        private void ZombieType_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is ComboBox comboBox && DataContext is ModifierViewModel vm)
+            {
+                // 创建CollectionViewSource用于过滤
+                _zombieTypeCollectionView = new System.Windows.Data.CollectionViewSource
+                {
+                    Source = vm.Zombies
+                };
+                
+                // 延迟查找内部TextBox，确保它已经创建
+                comboBox.Dispatcher.BeginInvoke(new System.Action(() =>
+                {
+                    // 尝试查找内部TextBox
+                    var textBox = FindVisualChild<System.Windows.Controls.TextBox>(comboBox);
+                    if (textBox != null)
+                    {
+                        // 直接订阅TextBox的TextChanged事件
+                        textBox.TextChanged += (s, args) =>
+                        {
+                            if (s is System.Windows.Controls.TextBox tb)
+                            {
+                                FilterZombieType(comboBox, tb.Text);
+                            }
+                        };
+                    }
+                    
+                    // 同时创建定时器作为备用方案
+                    _zombieTypeSearchTimer = new System.Windows.Threading.DispatcherTimer
+                    {
+                        Interval = TimeSpan.FromMilliseconds(30) // 每30ms检查一次，更频繁
+                    };
+                    _zombieTypeSearchTimer.Tick += (s, args) =>
+                    {
+                        string text = comboBox.Text ?? "";
+                        FilterZombieType(comboBox, text);
+                    };
+                    _zombieTypeSearchTimer.Start();
+                }), System.Windows.Threading.DispatcherPriority.Loaded);
+            }
+        }
+
+        /// <summary>
+        /// ZombieType ComboBox的GotFocus事件处理
+        /// </summary>
+        private void ZombieType_GotFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is ComboBox comboBox && _zombieTypeSearchTimer != null)
+            {
+                _zombieTypeSearchTimer.Start();
+            }
+        }
+
+        /// <summary>
+        /// ZombieType ComboBox的LostFocus事件处理
+        /// </summary>
+        private void ZombieType_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (_zombieTypeSearchTimer != null)
+            {
+                _zombieTypeSearchTimer.Stop();
+            }
+        }
+
+        /// <summary>
+        /// ZombieType ComboBox的PreviewKeyDown事件处理
+        /// </summary>
+        private void ZombieType_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (sender is ComboBox comboBox)
+            {
+                // 延迟执行过滤，等待文本更新
+                comboBox.Dispatcher.BeginInvoke(new System.Action(() =>
+                {
+                    FilterZombieType(comboBox, null);
+                }), System.Windows.Threading.DispatcherPriority.Input);
+            }
+        }
+
+        /// <summary>
+        /// ZombieType ComboBox的PreviewTextInput事件处理
+        /// </summary>
+        private void ZombieType_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+        {
+            if (sender is ComboBox comboBox)
+            {
+                // 获取即将输入的文本
+                string newText = (comboBox.Text ?? "") + e.Text;
+                // 延迟执行过滤，等待文本更新
+                comboBox.Dispatcher.BeginInvoke(new System.Action(() =>
+                {
+                    FilterZombieType(comboBox, newText);
+                }), System.Windows.Threading.DispatcherPriority.Input);
+            }
+        }
+
+        /// <summary>
+        /// ZombieType ComboBox的KeyDown事件处理
+        /// </summary>
+        private void ZombieType_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (sender is ComboBox comboBox)
+            {
+                // 延迟执行过滤，等待文本更新
+                comboBox.Dispatcher.BeginInvoke(new System.Action(() =>
+                {
+                    FilterZombieType(comboBox, null);
+                }), System.Windows.Threading.DispatcherPriority.Input);
+            }
+        }
+
+        /// <summary>
+        /// ZombieType ComboBox的TextInput事件处理
+        /// </summary>
+        private void ZombieType_TextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+        {
+            if (sender is ComboBox comboBox)
+            {
+                // 获取即将输入的文本
+                string newText = (comboBox.Text ?? "") + e.Text;
+                // 延迟执行过滤，等待文本更新
+                comboBox.Dispatcher.BeginInvoke(new System.Action(() =>
+                {
+                    FilterZombieType(comboBox, newText);
+                }), System.Windows.Threading.DispatcherPriority.Input);
+            }
+        }
+
+        /// <summary>
+        /// 过滤ZombieType列表
+        /// </summary>
+        private void FilterZombieType(ComboBox comboBox, string? currentText = null)
+        {
+            if (DataContext is not ModifierViewModel vm) return;
+
+            // 如果没有提供文本，尝试获取
+            if (currentText == null)
+            {
+                // 方法1: 直接使用ComboBox的Text属性
+                try
+                {
+                    currentText = comboBox.Text ?? "";
+                }
+                catch
+                {
+                    // 方法2: 查找内部TextBox
+                    var textBox = FindVisualChild<System.Windows.Controls.TextBox>(comboBox);
+                    if (textBox != null)
+                    {
+                        currentText = textBox.Text ?? "";
+                    }
+                    else
+                    {
+                        currentText = "";
+                    }
+                }
+            }
+
+            // 如果文本没有变化，不执行过滤
+            if (currentText == _lastZombieSearchText) return;
+            _lastZombieSearchText = currentText;
+
+            string searchText = currentText.Trim();
+
+            // 如果搜索文本为空，恢复原始ItemsSource，让系统自带搜索处理
+            if (string.IsNullOrEmpty(searchText))
+            {
+                // 不设置ItemsSource，让系统恢复
+                return;
+            }
+
+            // 检查是否包含非ASCII字符（中文等），如果只包含数字和ASCII字符，让系统自带搜索处理
+            bool containsNonAscii = false;
+            foreach (char c in searchText)
+            {
+                if (c > 127)
+                {
+                    containsNonAscii = true;
+                    break;
+                }
+            }
+
+            // 如果只包含ASCII字符（可能是纯数字ID），不进行自定义过滤，让系统处理
+            if (!containsNonAscii)
+            {
+                return;
+            }
+
+            // 包含中文等非ASCII字符，进行自定义过滤
+            var filtered = new Dictionary<int, string>();
+            foreach (var kvp in vm.Zombies)
+            {
+                // 支持搜索ID（数字）和名称（中文）
+                if (kvp.Key.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                    kvp.Value.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                {
+                    filtered.Add(kvp.Key, kvp.Value);
+                }
+            }
+
+            // 更新ItemsSource
+            comboBox.ItemsSource = filtered;
+
+            // 如果过滤后有结果，自动打开下拉列表
+            if (filtered.Count > 0)
+            {
+                comboBox.IsDropDownOpen = true;
+            }
+        }
+
+        /// <summary>
         /// 解析词条ID（支持 A0, U1, D0 格式）
         /// </summary>
         private int ParseBuffId(string part, ModifierViewModel vm, int advancedCount, int ultimateCount, int ultimateStartIndex)
@@ -1210,6 +1666,118 @@ namespace PVZRHTools
                 // 如果下拉列表未打开，阻止事件冒泡到ScrollViewer，防止主界面滚动
                 e.Handled = true;
             }
+        }
+
+        /// <summary>
+        /// 检索分区的搜索框文本变化事件处理
+        /// </summary>
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (sender is not TextBox searchBox || DataContext is not ModifierViewModel vm)
+                return;
+
+            string searchText = searchBox.Text?.Trim() ?? "";
+
+            // 如果搜索文本为空，清空所有结果
+            if (string.IsNullOrEmpty(searchText))
+            {
+                PlantsResultsListBox.ItemsSource = null;
+                ZombiesResultsListBox.ItemsSource = null;
+                BuffsResultsListBox.ItemsSource = null;
+                BulletsResultsListBox.ItemsSource = null;
+                ItemsResultsListBox.ItemsSource = null;
+                
+                PlantsExpander.IsExpanded = false;
+                ZombiesExpander.IsExpanded = false;
+                BuffsExpander.IsExpanded = false;
+                BulletsExpander.IsExpanded = false;
+                ItemsExpander.IsExpanded = false;
+                return;
+            }
+
+            // 搜索植物
+            var plantsResults = new List<string>();
+            if (vm.Plants2 != null)
+            {
+                foreach (var kvp in vm.Plants2)
+                {
+                    if (kvp.Key.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                        kvp.Value.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                    {
+                        plantsResults.Add($"{kvp.Key} : {kvp.Value}");
+                    }
+                }
+            }
+            PlantsResultsListBox.ItemsSource = plantsResults;
+            PlantsExpander.IsExpanded = plantsResults.Count > 0;
+
+            // 搜索僵尸
+            var zombiesResults = new List<string>();
+            if (vm.Zombies != null)
+            {
+                foreach (var kvp in vm.Zombies)
+                {
+                    if (kvp.Key.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                        kvp.Value.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                    {
+                        zombiesResults.Add($"{kvp.Key} : {kvp.Value}");
+                    }
+                }
+            }
+            ZombiesResultsListBox.ItemsSource = zombiesResults;
+            ZombiesExpander.IsExpanded = zombiesResults.Count > 0;
+
+            // 搜索词条
+            var buffsResults = new List<string>();
+            if (vm.AllInGameBuffs != null)
+            {
+                foreach (var buff in vm.AllInGameBuffs)
+                {
+                    string buffText = buff.TravelBuff?.Text ?? "";
+                    string buffIndex = buff.TravelBuff?.Index.ToString() ?? "";
+                    
+                    if (buffIndex.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                        buffText.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                    {
+                        string buffType = buff.TravelBuff?.Debuff == true ? "Debuff" : "Buff";
+                        buffsResults.Add($"{buffIndex} ({buffType}) : {buffText}");
+                    }
+                }
+            }
+            BuffsResultsListBox.ItemsSource = buffsResults;
+            BuffsExpander.IsExpanded = buffsResults.Count > 0;
+
+            // 搜索子弹
+            var bulletsResults = new List<string>();
+            if (vm.Bullets2 != null)
+            {
+                foreach (var kvp in vm.Bullets2)
+                {
+                    if (kvp.Key.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                        kvp.Value.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                    {
+                        bulletsResults.Add($"{kvp.Key} : {kvp.Value}");
+                    }
+                }
+            }
+            BulletsResultsListBox.ItemsSource = bulletsResults;
+            BulletsExpander.IsExpanded = bulletsResults.Count > 0;
+
+            // 搜索物品
+            var itemsResults = new List<string>();
+            if (vm.Items != null)
+            {
+                foreach (var kvp in vm.Items)
+                {
+                    if (kvp.Key.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                        kvp.Value.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                    {
+                        itemsResults.Add($"{kvp.Key} : {kvp.Value}");
+                    }
+                }
+            }
+            ItemsResultsListBox.ItemsSource = itemsResults;
+            ItemsExpander.IsExpanded = itemsResults.Count > 0;
         }
     }
 }

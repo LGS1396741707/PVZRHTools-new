@@ -34,6 +34,14 @@
     <s:String x:Key="Tab10.Wave8.Header">Flag 8</s:String>
     <s:String x:Key="Tab10.Wave9.Header">Flag 9</s:String>
     <s:String x:Key="Tab10.Wave10.Header">Flag 10</s:String>
+    <s:String x:Key="Tab11.Header">Search Zone</s:String>
+    <s:String x:Key="Tab11.SearchBox.Placeholder">Enter Chinese or number to search...</s:String>
+    <s:String x:Key="Tab11.Results.Plants">Plants</s:String>
+    <s:String x:Key="Tab11.Results.Zombies">Zombies</s:String>
+    <s:String x:Key="Tab11.Results.Buffs">Buffs</s:String>
+    <s:String x:Key="Tab11.Results.Bullets">Bullets</s:String>
+    <s:String x:Key="Tab11.Results.Items">Items</s:String>
+    <s:String x:Key="Tab11.Results.NoResults">No matches found</s:String>
     <s:String x:Key="Tab1.Page1.Header">BasicProperties</s:String>
     <s:String x:Key="Tab1.Page2.Header">PresentModify</s:String>
     <s:String x:Key="Tab1.Page3.Header">DataModify</s:String>
