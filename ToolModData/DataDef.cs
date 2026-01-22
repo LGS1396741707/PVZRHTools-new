@@ -240,9 +240,14 @@ public struct InGameActions : ISyncData
     public bool? FlagWaveBuffEnabled { get; set; }
     
     /// <summary>
-    /// 旗帜波词条功能 - 要应用的词条ID列表
+    /// 旗帜波词条功能 - 要应用的词条ID列表（使用 -1 作为分隔符，表示一个旗子的词条结束）
     /// </summary>
     public List<int>? FlagWaveBuffIds { get; set; }
+    
+    /// <summary>
+    /// 旗帜波自定义字幕列表（10个旗帜波的自定义字幕）
+    /// </summary>
+    public List<string>? FlagWaveCustomTexts { get; set; }
 }
 
 public struct InGameHotkeys : ISyncData

@@ -160,7 +160,7 @@ public static class BoardFlagWaveBuffPatch
     }
 
     /// <summary>
-    /// 旗帜波词条：按顺序每次只解锁 1 个词条（永久保持到本局结束）
+    /// 旗帜波词条：按顺序每次解锁一个旗帜波的所有词条（永久保持到本局结束）
     /// </summary>
     private static void UnlockNextFlagWaveBuff()
     {
@@ -185,15 +185,213 @@ public static class BoardFlagWaveBuffPatch
             if (_flagWaveUnlockIndex >= FlagWaveBuffIds.Count)
                 return; // 已全部解锁
 
-            var encodedBuffId = FlagWaveBuffIds[_flagWaveUnlockIndex];
-            _flagWaveUnlockIndex++;
-            
             // 记录当前波数，防止重复解锁
             _lastUnlockWave = currentWave;
 
-            // 关键日志：记录原始编码ID，这是最重要的调试信息
+            // 关键日志：记录当前旗帜波的词条列表
             MLogger?.LogInfo($"[PVZRHTools] ========== 旗帜波词条开始处理 ==========");
-            MLogger?.LogInfo($"[PVZRHTools] 原始编码ID: {encodedBuffId}, 当前波数: {currentWave}, 索引: {_flagWaveUnlockIndex - 1}/{FlagWaveBuffIds.Count}");
+            MLogger?.LogInfo($"[PVZRHTools] 当前波数: {currentWave}, 索引: {_flagWaveUnlockIndex}/{FlagWaveBuffIds.Count}");
+            
+            // 收集当前旗帜波的所有词条（直到遇到 -1 分隔符）
+            var currentWaveBuffs = new List<int>();
+            bool foundSeparator = false;
+            
+            while (_flagWaveUnlockIndex < FlagWaveBuffIds.Count)
+            {
+                var encodedBuffId = FlagWaveBuffIds[_flagWaveUnlockIndex];
+                _flagWaveUnlockIndex++;
+                
+                // 如果遇到 -1 分隔符，表示当前旗子的词条结束
+                if (encodedBuffId == -1)
+                {
+                    foundSeparator = true;
+                    break;
+                }
+                
+                // 添加到当前旗帜波的词条列表
+                currentWaveBuffs.Add(encodedBuffId);
+            }
+            
+            // 如果当前旗帜波没有词条（空括号），直接返回
+            if (currentWaveBuffs.Count == 0)
+            {
+                MLogger?.LogInfo($"[PVZRHTools] 当前旗帜波没有词条（空括号），跳过");
+                _currentFlagWaveIndex++; // 仍然增加索引，因为这是一个空的旗帜波
+                return;
+            }
+            
+            MLogger?.LogInfo($"[PVZRHTools] 当前旗帜波词条数量: {currentWaveBuffs.Count}, 词条列表: [{string.Join(", ", currentWaveBuffs)}]");
+            
+            // 遍历当前旗帜波的所有词条，依次应用
+            foreach (var encodedBuffId in currentWaveBuffs)
+            {
+                ApplyFlagWaveBuff(encodedBuffId, travelMgr);
+            }
+            
+            // 显示文本：如果FlagWaveCustomTexts不为null且有内容，使用自定义字幕；否则显示词条名字
+            try
+            {
+                if (InGameText.Instance != null)
+                {
+                    string displayText = "";
+                    
+                    // 检查是否有自定义字幕（FlagWaveCustomTexts不为null说明是从Tab10来的，可以使用自定义字幕）
+                    // FlagWaveCustomTexts为null说明是从Tab2来的，不使用自定义字幕
+                    if (FlagWaveCustomTexts != null)
+                    {
+                        // 来自Tab10（词条专区）
+                        if (_currentFlagWaveIndex < FlagWaveCustomTexts.Count && 
+                            !string.IsNullOrWhiteSpace(FlagWaveCustomTexts[_currentFlagWaveIndex]))
+                        {
+                            // 使用自定义字幕（来自Tab10）
+                            displayText = FlagWaveCustomTexts[_currentFlagWaveIndex];
+                            MLogger?.LogInfo($"[PVZRHTools] 使用自定义字幕（来自Tab10）: {displayText}");
+                        }
+                        else
+                        {
+                            // Tab10没有自定义字幕，不显示任何字幕
+                            displayText = "";
+                            MLogger?.LogInfo($"[PVZRHTools] Tab10未设置自定义字幕，不显示字幕");
+                        }
+                    }
+                    else
+                    {
+                        // 来自Tab2（常用功能），显示词条名字和描述（格式：词条名字：（词条功能描述））
+                        var buffNames = new List<string>();
+                        foreach (var encodedBuffId in currentWaveBuffs)
+                        {
+                            string? buffName = GetBuffNameWithDescriptionFromEncodedId(encodedBuffId, travelMgr);
+                            if (!string.IsNullOrEmpty(buffName))
+                            {
+                                buffNames.Add(buffName);
+                            }
+                        }
+                        
+                        if (buffNames.Count > 0)
+                        {
+                            displayText = string.Join("、", buffNames);
+                            MLogger?.LogInfo($"[PVZRHTools] 显示词条名字和描述（来自Tab2常用功能）: {displayText}");
+                        }
+                    }
+                    
+                    if (!string.IsNullOrEmpty(displayText))
+                    {
+                        InGameText.Instance.ShowText(displayText, 5);
+                        MLogger?.LogInfo($"[PVZRHTools] 显示旗帜波文本: {displayText}");
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                MLogger?.LogWarning($"[PVZRHTools] 显示旗帜波解锁文本失败: {ex.Message}");
+            }
+            
+            // 增加旗帜波索引
+            _currentFlagWaveIndex++;
+            
+            MLogger?.LogInfo($"[PVZRHTools] ========== 旗帜波词条处理完成 ==========");
+        }
+        catch (System.Exception ex)
+        {
+            MLogger?.LogError($"[PVZRHTools] 旗帜波词条应用失败: {ex.Message}\n{ex.StackTrace}");
+        }
+    }
+    
+    /// <summary>
+    /// 从词条文本中提取词条名字（去除ID前缀和描述）
+    /// </summary>
+    private static string ExtractBuffName(string? fullText)
+    {
+        if (string.IsNullOrEmpty(fullText))
+            return "";
+        
+        // 如果包含 "#数字 " 前缀，去除它
+        if (fullText.StartsWith("#"))
+        {
+            int spaceIndex = fullText.IndexOf(' ');
+            if (spaceIndex > 0 && spaceIndex < fullText.Length - 1)
+            {
+                fullText = fullText.Substring(spaceIndex + 1);
+            }
+            else if (spaceIndex < 0)
+            {
+                // 如果没有空格，尝试找到第一个非数字字符
+                int firstNonDigit = 0;
+                for (int i = 1; i < fullText.Length; i++)
+                {
+                    if (!char.IsDigit(fullText[i]))
+                    {
+                        firstNonDigit = i;
+                        break;
+                    }
+                }
+                if (firstNonDigit > 0)
+                {
+                    fullText = fullText.Substring(firstNonDigit);
+                }
+            }
+        }
+        
+        // 如果包含 "：" 或 ":" 分隔符，只取前面的部分（词条名字）
+        int colonIndex = fullText.IndexOf('：');
+        if (colonIndex < 0) colonIndex = fullText.IndexOf(':');
+        if (colonIndex > 0)
+        {
+            fullText = fullText.Substring(0, colonIndex).Trim();
+        }
+        
+        return fullText.Trim();
+    }
+    
+    /// <summary>
+    /// 从词条文本中提取词条名字和描述（去除ID前缀，保留名字和描述）
+    /// 返回格式：词条名字：（词条功能描述）
+    /// </summary>
+    private static string ExtractBuffNameWithDescription(string? fullText)
+    {
+        if (string.IsNullOrEmpty(fullText))
+            return "";
+        
+        // 如果包含 "#数字 " 前缀，去除它
+        if (fullText.StartsWith("#"))
+        {
+            int spaceIndex = fullText.IndexOf(' ');
+            if (spaceIndex > 0 && spaceIndex < fullText.Length - 1)
+            {
+                fullText = fullText.Substring(spaceIndex + 1);
+            }
+            else if (spaceIndex < 0)
+            {
+                // 如果没有空格，尝试找到第一个非数字字符
+                int firstNonDigit = 0;
+                for (int i = 1; i < fullText.Length; i++)
+                {
+                    if (!char.IsDigit(fullText[i]))
+                    {
+                        firstNonDigit = i;
+                        break;
+                    }
+                }
+                if (firstNonDigit > 0)
+                {
+                    fullText = fullText.Substring(firstNonDigit);
+                }
+            }
+        }
+        
+        // 保留完整的文本（包括名字和描述），只去除ID前缀
+        return fullText.Trim();
+    }
+    
+    /// <summary>
+    /// 应用单个旗帜波词条，返回词条名字（不包含描述）
+    /// </summary>
+    private static string? ApplyFlagWaveBuff(int encodedBuffId, TravelMgr travelMgr)
+    {
+        try
+        {
+            // 关键日志：记录原始编码ID，这是最重要的调试信息
+            MLogger?.LogInfo($"[PVZRHTools] 开始处理词条: 编码ID={encodedBuffId}");
 
             // 解码Buff ID，获取类型和原始ID
             // 特别处理：如果编码ID在1000-1999范围内，强制识别为Ultimate类型
@@ -226,7 +424,7 @@ public static class BoardFlagWaveBuffPatch
             {
                 // 无效的编码ID
                 MLogger?.LogError($"[PVZRHTools] 旗帜波词条解码失败: 无效的编码ID={encodedBuffId} (应该是 0-2999 范围内的整数)");
-                return; // 直接返回，不处理
+                return null; // 直接返回，不处理
             }
             string? buffName = null;
             bool applied = false;
@@ -249,7 +447,7 @@ public static class BoardFlagWaveBuffPatch
                     if (encodedBuffId >= 1000 && encodedBuffId < 2000)
                     {
                         MLogger?.LogError($"[PVZRHTools] 严重错误: 尝试将编码ID={encodedBuffId} (应该是Ultimate) 应用为Advanced词条！直接返回，不处理！");
-                        return; // 直接返回，防止错误应用
+                        return null; // 直接返回，防止错误应用
                     }
                     
                     if (travelMgr.advancedUpgrades != null &&
@@ -403,12 +601,13 @@ public static class BoardFlagWaveBuffPatch
                     break;
             }
             
-            MLogger?.LogInfo($"[PVZRHTools] ========== 旗帜波词条处理完成 ==========");
-            MLogger?.LogInfo($"[PVZRHTools] 最终结果: applied={applied}, buffType={buffType}, originalId={originalId}, encodedBuffId={encodedBuffId}, buffName={buffName ?? "未知"}");
-            
             if (!applied)
             {
                 MLogger?.LogWarning($"[PVZRHTools] 旗帜波词条应用失败：类型={buffType}, 原始ID={originalId}, 编码ID={encodedBuffId}");
+            }
+            else
+            {
+                MLogger?.LogInfo($"[PVZRHTools] 词条应用成功: buffType={buffType}, originalId={originalId}, encodedBuffId={encodedBuffId}, buffName={buffName ?? "未知"}");
             }
 
             // 设置 BoardTag 标志，使游戏识别并应用词条效果
@@ -424,23 +623,170 @@ public static class BoardFlagWaveBuffPatch
                 }
             }
 
-            // 显示“解锁的词条名”（不再用自定义文本）
-            try
+            // 返回词条名字（不包含描述），不在这里显示
+            if (applied && !string.IsNullOrEmpty(buffName))
             {
-                if (InGameText.Instance != null)
-                {
-                    var text = string.IsNullOrEmpty(buffName) ? $"解锁词条：{encodedBuffId}" : $"解锁词条：{buffName}";
-                    InGameText.Instance.ShowText(text, 5);
-                }
+                return ExtractBuffName(buffName);
             }
-            catch (System.Exception ex)
-            {
-                MLogger?.LogWarning($"[PVZRHTools] 显示旗帜波解锁文本失败: {ex.Message}");
-            }
+            return null;
         }
         catch (System.Exception ex)
         {
-            MLogger?.LogError($"[PVZRHTools] 应用旗帜波词条失败: {ex.Message}\n{ex.StackTrace}");
+            MLogger?.LogError($"[PVZRHTools] 应用单个旗帜波词条失败: {ex.Message}\n{ex.StackTrace}");
+            return null;
+        }
+    }
+    
+    /// <summary>
+    /// 从编码ID获取词条名字（不应用词条，仅获取名字）
+    /// </summary>
+    private static string? GetBuffNameFromEncodedId(int encodedBuffId, TravelMgr travelMgr)
+    {
+        try
+        {
+            PatchMgr.BuffType buffType;
+            int originalId;
+            
+            if (encodedBuffId >= 2000)
+            {
+                buffType = PatchMgr.BuffType.Debuff;
+                originalId = encodedBuffId - 2000;
+            }
+            else if (encodedBuffId >= 1000 && encodedBuffId < 2000)
+            {
+                buffType = PatchMgr.BuffType.Ultimate;
+                originalId = encodedBuffId - 1000;
+            }
+            else if (encodedBuffId >= 0 && encodedBuffId < 1000)
+            {
+                buffType = PatchMgr.BuffType.Advanced;
+                originalId = encodedBuffId;
+            }
+            else
+            {
+                return null;
+            }
+            
+            string? buffName = null;
+            
+            switch (buffType)
+            {
+                case PatchMgr.BuffType.Advanced:
+                    TravelMgr.advancedBuffs?.TryGetValue(originalId, out buffName);
+                    break;
+                case PatchMgr.BuffType.Ultimate:
+                    if (TravelMgr.ultimateBuffs != null)
+                    {
+                        if (TravelMgr.ultimateBuffs.ContainsKey(originalId))
+                        {
+                            TravelMgr.ultimateBuffs.TryGetValue(originalId, out buffName);
+                        }
+                        else
+                        {
+                            var keysList = new List<int>();
+                            foreach (var key in TravelMgr.ultimateBuffs.Keys)
+                                keysList.Add(key);
+                            keysList.Sort();
+                            if (originalId < keysList.Count)
+                            {
+                                var dictKey = keysList[originalId];
+                                TravelMgr.ultimateBuffs.TryGetValue(dictKey, out buffName);
+                            }
+                        }
+                    }
+                    break;
+                case PatchMgr.BuffType.Debuff:
+                    TravelMgr.debuffs?.TryGetValue(originalId, out buffName);
+                    break;
+            }
+            
+            if (!string.IsNullOrEmpty(buffName))
+            {
+                return ExtractBuffName(buffName);
+            }
+            return null;
+        }
+        catch (System.Exception ex)
+        {
+            MLogger?.LogWarning($"[PVZRHTools] 获取词条名字失败: {ex.Message}");
+            return null;
+        }
+    }
+    
+    /// <summary>
+    /// 从编码ID获取词条名字和描述（不应用词条，获取包含描述的完整文本）
+    /// 返回格式：词条名字：（词条功能描述）
+    /// </summary>
+    private static string? GetBuffNameWithDescriptionFromEncodedId(int encodedBuffId, TravelMgr travelMgr)
+    {
+        try
+        {
+            PatchMgr.BuffType buffType;
+            int originalId;
+            
+            if (encodedBuffId >= 2000)
+            {
+                buffType = PatchMgr.BuffType.Debuff;
+                originalId = encodedBuffId - 2000;
+            }
+            else if (encodedBuffId >= 1000 && encodedBuffId < 2000)
+            {
+                buffType = PatchMgr.BuffType.Ultimate;
+                originalId = encodedBuffId - 1000;
+            }
+            else if (encodedBuffId >= 0 && encodedBuffId < 1000)
+            {
+                buffType = PatchMgr.BuffType.Advanced;
+                originalId = encodedBuffId;
+            }
+            else
+            {
+                return null;
+            }
+            
+            string? buffName = null;
+            
+            switch (buffType)
+            {
+                case PatchMgr.BuffType.Advanced:
+                    TravelMgr.advancedBuffs?.TryGetValue(originalId, out buffName);
+                    break;
+                case PatchMgr.BuffType.Ultimate:
+                    if (TravelMgr.ultimateBuffs != null)
+                    {
+                        if (TravelMgr.ultimateBuffs.ContainsKey(originalId))
+                        {
+                            TravelMgr.ultimateBuffs.TryGetValue(originalId, out buffName);
+                        }
+                        else
+                        {
+                            var keysList = new List<int>();
+                            foreach (var key in TravelMgr.ultimateBuffs.Keys)
+                                keysList.Add(key);
+                            keysList.Sort();
+                            if (originalId < keysList.Count)
+                            {
+                                var dictKey = keysList[originalId];
+                                TravelMgr.ultimateBuffs.TryGetValue(dictKey, out buffName);
+                            }
+                        }
+                    }
+                    break;
+                case PatchMgr.BuffType.Debuff:
+                    TravelMgr.debuffs?.TryGetValue(originalId, out buffName);
+                    break;
+            }
+            
+            if (!string.IsNullOrEmpty(buffName))
+            {
+                return ExtractBuffNameWithDescription(buffName);
+            }
+            return null;
+        }
+        catch (System.Exception ex)
+        {
+            MLogger?.LogWarning($"[PVZRHTools] 获取词条名字和描述失败: {ex.Message}");
+            return null;
         }
     }
 }
@@ -4389,9 +4735,14 @@ public class PatchMgr : MonoBehaviour
     public static bool FlagWaveBuffEnabled { get; set; } = false;
     
     /// <summary>
-    /// 旗帜波词条功能 - 要应用的词条ID列表
+    /// 旗帜波词条功能 - 要应用的词条ID列表（每个子列表代表一个旗帜波的词条）
     /// </summary>
     public static List<int> FlagWaveBuffIds { get; set; } = new List<int>();
+    
+    /// <summary>
+    /// 旗帜波自定义字幕列表（10个旗帜波的自定义字幕）
+    /// </summary>
+    public static List<string> FlagWaveCustomTexts { get; set; } = new List<string>();
     
     /// <summary>
     /// 旗帜波词条功能 - 上一次检测到的旗帜波状态（用于检测状态变化）
@@ -4415,6 +4766,11 @@ public class PatchMgr : MonoBehaviour
     /// 旗帜波词条功能 - 上一次解锁时的波数（用于防重复解锁）
     /// </summary>
     public static int _lastUnlockWave = -1;
+    
+    /// <summary>
+    /// 旗帜波词条功能 - 当前已解锁的旗帜波索引（用于获取对应的自定义字幕）
+    /// </summary>
+    public static int _currentFlagWaveIndex = 0;
     
     /// <summary>
     /// Buff类型枚举
@@ -4498,7 +4854,7 @@ public class PatchMgr : MonoBehaviour
     public static float SyncSpeed { get; set; } = -1;
     private static float _lastGameSpeed = -1; // 记录上次游戏内部速度，用于检测变化
     public static bool IsSpeedModifiedByTool { get; set; } = false; // 标记修改器是否主动设置了速度
-    public static bool GameSpeedEnabled { get; set; } = true; // 游戏速度功能开关，默认开启
+    public static bool GameSpeedEnabled { get; set; } = false; // 游戏速度功能开关，默认关闭
     public static bool TimeSlow { get; set; }
     public static bool TimeStop { get; set; }
     public static bool[] UltiBuffs { get; set; } = [];
@@ -5151,35 +5507,7 @@ public class PatchMgr : MonoBehaviour
         }
         
         Board.Instance.freeCD = FreeCD;
-        // 兜底：如果当前关卡没有小推车，则自动生成一次，避免“开局无推车”
-        try
-        {
-            var mowers = Board.Instance.mowerArray;
-            var missing = mowers == null || mowers.Count == 0;
-            if (!missing && mowers != null)
-            {
-                var allNull = true;
-                for (int i = 0; i < mowers.Count; i++)
-                {
-                    if (mowers[i] != null)
-                    {
-                        allNull = false;
-                        break;
-                    }
-                }
-                missing = allNull;
-            }
-
-            if (missing && GameAPP.board != null)
-            {
-                var initBoard = GameAPP.board.GetComponent<InitBoard>();
-                initBoard?.InitMower();
-            }
-        }
-        catch (System.Exception ex)
-        {
-            MLogger?.LogWarning($"[PVZRHTools] PostInitBoard 自动生成小推车失败: {ex.Message}");
-        }
+        // 已移除：不再在游戏开局自动生成小推车
         yield return null;
         if (!(GameAPP.theBoardType == (LevelType)3 && Board.Instance.theCurrentSurvivalRound != 1))
         {
@@ -5251,6 +5579,7 @@ public class PatchMgr : MonoBehaviour
         _lastHugeWaveState = false;
         _flagWaveUnlockIndex = 0;
         _lastUnlockWave = -1;
+        _currentFlagWaveIndex = 0;
         
         yield return null;
 
@@ -5284,6 +5613,8 @@ public class PatchMgr : MonoBehaviour
 
         // 进入游戏后重新读取所有词条（包括MOD添加的），并发送给UI
         // MOD词条通常在TravelMgr.Awake中注册，需要等待更长时间确保所有MOD都完成注册
+        // 已禁用：用户不需要在游戏启动时读取词条数据
+        /*
         MLogger?.LogInfo("[PVZRHTools] PostInitBoard: 准备重新读取词条数据（第1次）");
         yield return new WaitForSeconds(1.5f); // 等待MOD词条注册完成（增加到1.5秒）
         MLogger?.LogInfo("[PVZRHTools] PostInitBoard: 开始重新读取词条数据（第1次）");
@@ -5300,6 +5631,7 @@ public class PatchMgr : MonoBehaviour
         yield return new WaitForSeconds(1.0f);
         MLogger?.LogInfo("[PVZRHTools] PostInitBoard: 开始重新读取词条数据（第3次）");
         ReloadAndSendBuffsData();
+        */
 
         yield return null;
         if (ZombieSeaLow && SeaTypes.Count > 0)

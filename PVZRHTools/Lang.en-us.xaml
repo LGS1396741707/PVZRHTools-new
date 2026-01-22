@@ -21,6 +21,19 @@
     <s:String x:Key="Tab9.PlantEntry.MNEntry.Tooltip">Indestructible: SuperMachineNut takes at most 200 damage per hit&#x0a;Advanced Logistics: SuperMachineNut recovers double health, SunMagnetShroom cooldown greatly reduced</s:String>
     <s:String x:Key="Tab9.ZombieEntry.Header">Zombie Entries</s:String>
     <s:String x:Key="Tab9.ZombieEntry.Placeholder">Zombie entry features to be added...</s:String>
+    <s:String x:Key="Tab10.Header">Flag Wave Buffs</s:String>
+    <s:String x:Key="Tab10.Wave.BuffSelection">Buff Selection</s:String>
+    <s:String x:Key="Tab10.Wave.CustomText">Custom Text</s:String>
+    <s:String x:Key="Tab10.Wave1.Header">Flag 1</s:String>
+    <s:String x:Key="Tab10.Wave2.Header">Flag 2</s:String>
+    <s:String x:Key="Tab10.Wave3.Header">Flag 3</s:String>
+    <s:String x:Key="Tab10.Wave4.Header">Flag 4</s:String>
+    <s:String x:Key="Tab10.Wave5.Header">Flag 5</s:String>
+    <s:String x:Key="Tab10.Wave6.Header">Flag 6</s:String>
+    <s:String x:Key="Tab10.Wave7.Header">Flag 7</s:String>
+    <s:String x:Key="Tab10.Wave8.Header">Flag 8</s:String>
+    <s:String x:Key="Tab10.Wave9.Header">Flag 9</s:String>
+    <s:String x:Key="Tab10.Wave10.Header">Flag 10</s:String>
     <s:String x:Key="Tab1.Page1.Header">BasicProperties</s:String>
     <s:String x:Key="Tab1.Page2.Header">PresentModify</s:String>
     <s:String x:Key="Tab1.Page3.Header">DataModify</s:String>
@@ -177,8 +190,8 @@
     <s:String x:Key="Tab2.Page2.FlagWaveBuffEnabled">Flag Wave Buff Feature</s:String>
     <s:String x:Key="Tab2.Page2.FlagWaveBuffIds">Flag Wave Buffs:</s:String>
     <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds">Buff ID Order:</s:String>
-    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Tooltip">Enter buffs in order, separated by comma/space/newline. Format: A0=Advanced Buff #0, U1=Ultimate Buff #1, D0=Debuff #0. Example: A0, U1, D0, A5</s:String>
-    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Hint">Format: A0=Advanced Buff #0, U1=Ultimate Buff #1, D0=Debuff #0 (numbers start from 0)</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Tooltip">Use bracket format: Each bracket represents one flag wave. Format: (a1,u2)()(d3,a0) means: first flag gets Advanced Buff #1 and Ultimate Buff #2, second flag gets nothing, third flag gets Debuff #3 and Advanced Buff #0. Example: (a1,u2)()(d3,a0)</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Hint">Format: () brackets represent buffs for one flag wave. Example: (a1,u2)()(d3,a0) means first flag gets Advanced Buff #1 and Ultimate Buff #2, second flag gets nothing, third flag gets Debuff #3 and Advanced Buff #0 (numbers start from 0)</s:String>
     <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Apply">Apply ID Order</s:String>
     <s:String x:Key="Tab2.Page2.StartMower">StartMower</s:String>
     <s:String x:Key="Tab2.Page2.CreateMower">CreateMower</s:String>

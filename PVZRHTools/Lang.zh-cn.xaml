@@ -21,6 +21,19 @@
     <s:String x:Key="Tab9.PlantEntry.MNEntry.Tooltip">坚不可摧: 鱼丸受到的伤害最多为200&#x0a;高级后勤: 鱼丸恢复血量时恢复双倍血量，阳光磁力菇冷却时间大幅减少</s:String>
     <s:String x:Key="Tab9.ZombieEntry.Header">僵尸词条</s:String>
     <s:String x:Key="Tab9.ZombieEntry.Placeholder">僵尸词条功能待添加...</s:String>
+    <s:String x:Key="Tab10.Header">旗帜波词条</s:String>
+    <s:String x:Key="Tab10.Wave.BuffSelection">词条选择</s:String>
+    <s:String x:Key="Tab10.Wave.CustomText">自定义字幕</s:String>
+    <s:String x:Key="Tab10.Wave1.Header">第1旗</s:String>
+    <s:String x:Key="Tab10.Wave2.Header">第2旗</s:String>
+    <s:String x:Key="Tab10.Wave3.Header">第3旗</s:String>
+    <s:String x:Key="Tab10.Wave4.Header">第4旗</s:String>
+    <s:String x:Key="Tab10.Wave5.Header">第5旗</s:String>
+    <s:String x:Key="Tab10.Wave6.Header">第6旗</s:String>
+    <s:String x:Key="Tab10.Wave7.Header">第7旗</s:String>
+    <s:String x:Key="Tab10.Wave8.Header">第8旗</s:String>
+    <s:String x:Key="Tab10.Wave9.Header">第9旗</s:String>
+    <s:String x:Key="Tab10.Wave10.Header">第10旗</s:String>
     <s:String x:Key="Tab1.Page1.Header">基本特性</s:String>
     <s:String x:Key="Tab1.Page2.Header">礼盒修改</s:String>
     <s:String x:Key="Tab1.Page3.Header">数值修改</s:String>
@@ -185,8 +198,8 @@
     <s:String x:Key="Tab2.Page2.FlagWaveBuffEnabled">旗帜波词条功能</s:String>
     <s:String x:Key="Tab2.Page2.FlagWaveBuffIds">旗帜波词条：</s:String>
     <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds">词条ID顺序：</s:String>
-    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Tooltip">按顺序输入词条，用逗号/空格/换行分隔。格式：A0=高级词条第0个，U1=究极词条第1个，D0=负面词条第0个。示例：A0, U1, D0, A5</s:String>
-    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Hint">格式提示：A0=高级词条第0个，U1=究极词条第1个，D0=负面词条第0个（数字从0开始）</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Tooltip">使用括号格式：每个括号代表一个旗子。格式：(a1,u2)()(d3,a0) 表示：第一个旗子抽取高级词条1和究极词条2，第二个旗子不抽取，第三个旗子抽取负面词条3和高级词条0。示例：(a1,u2)()(d3,a0)</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Hint">格式：()括号为一个旗子所抽到的词条。例如：(a1,u2)()(d3,a0) 表示第一个旗子抽取高级词条1和究极词条2，第二个旗子不抽取，第三个旗子抽取负面词条3和高级词条0（数字从0开始）</s:String>
     <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Apply">按ID顺序应用</s:String>
     <s:String x:Key="Tab2.Page2.StartMower">启动所有小推车</s:String>
     <s:String x:Key="Tab2.Page2.CreateMower">生成小推车</s:String>

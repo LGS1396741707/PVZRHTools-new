@@ -324,38 +324,7 @@ public class DataProcessor : MonoBehaviour
 
         if (data is InGameActions iga)
         {
-            // 当切换关卡或 Board 不存在时重置本地状态
-            if (Board.Instance == null) _mowerEnsured = false;
-
-            // 兜底：若当前关卡小推车缺失，则自动补齐一次（不清除现有推车）
-            if (!_mowerEnsured && Board.Instance != null && GameAPP.board != null)
-            {
-                try
-                {
-                    var mowers = Board.Instance.mowerArray;
-                    var missing = mowers == null || mowers.Count == 0;
-                    if (!missing && mowers != null)
-                    {
-                        var allNull = true;
-                        for (int i = 0; i < mowers.Count; i++)
-                        {
-                            if (mowers[i] != null)
-                            {
-                                allNull = false;
-                                break;
-                            }
-                        }
-                        missing = allNull;
-                    }
-                    if (missing)
-                    {
-                        var initBoard = GameAPP.board.GetComponent<InitBoard>();
-                        initBoard?.InitMower();
-                        _mowerEnsured = true;
-                    }
-                }
-                catch { /* ignore */ }
-            }
+            // 已移除：不再在游戏开局自动生成小推车
 
             if (iga.ZombieSeaEnabled is not null
                 && iga.ZombieSeaCD is not null
@@ -1494,9 +1463,17 @@ all");
             }
             if (iga.FlagWaveBuffIds is not null)
             {
-                MLogger?.LogInfo($"[PVZRHTools] DataProcessor: 接收到 FlagWaveBuffIds = [{string.Join(", ", iga.FlagWaveBuffIds)}]");
+                var idsStr = string.Join(", ", iga.FlagWaveBuffIds);
+                MLogger?.LogInfo($"[PVZRHTools] DataProcessor: 接收到 FlagWaveBuffIds = [{idsStr}]");
                 PatchMgr.FlagWaveBuffIds = iga.FlagWaveBuffIds;
-                MLogger?.LogInfo($"[PVZRHTools] DataProcessor: 已设置 PatchMgr.FlagWaveBuffIds = [{string.Join(", ", PatchMgr.FlagWaveBuffIds)}]");
+                var setIdsStr = string.Join(", ", PatchMgr.FlagWaveBuffIds);
+                MLogger?.LogInfo($"[PVZRHTools] DataProcessor: 已设置 PatchMgr.FlagWaveBuffIds = [{setIdsStr}]");
+            }
+            if (iga.FlagWaveCustomTexts is not null)
+            {
+                PatchMgr.FlagWaveCustomTexts = iga.FlagWaveCustomTexts;
+                var textsStr = string.Join(" | ", iga.FlagWaveCustomTexts);
+                MLogger?.LogInfo($"[PVZRHTools] DataProcessor: 已设置 FlagWaveCustomTexts = [{textsStr}]");
             }
         }
 
@@ -1593,5 +1570,6 @@ all");
         });
     }
 
-    private static bool _mowerEnsured = false;
+    // 已移除：不再在游戏开局自动生成小推车，因此不再需要此变量
+    // private static bool _mowerEnsured = false;
 }

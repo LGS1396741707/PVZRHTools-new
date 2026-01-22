@@ -341,6 +341,12 @@ namespace PVZRHTools
                 return true;
             }
             
+            // 检查当前元素是否是 HandyControl 的 CheckComboBox 且下拉列表打开
+            if (parent is HandyControl.Controls.CheckComboBox checkComboBox && checkComboBox.IsDropDownOpen)
+            {
+                return true;
+            }
+            
             // 递归检查子元素
             int childrenCount = VisualTreeHelper.GetChildrenCount(parent);
             for (int i = 0; i < childrenCount; i++)
@@ -525,9 +531,15 @@ namespace PVZRHTools
                         ids.Add(encodedId);
                     }
                 }
+                // 将所有选中的词条作为一个旗帜波（兼容旧的多选框行为）
+                // 添加 -1 分隔符表示一个旗子结束
+                if (ids.Count > 0)
+                {
+                    ids.Add(-1);
+                }
                 System.Diagnostics.Debug.WriteLine($"[旗帜波词条] FlagWaveBuffIdsComboBox_SelectionChanged: 准备设置 ids = [{string.Join(", ", ids)}]");
                 vm.FlagWaveBuffIds = ids;
-                System.Diagnostics.Debug.WriteLine($"[旗帜波词条] FlagWaveBuffIdsComboBox_SelectionChanged: 已设置 vm.FlagWaveBuffIds = [{string.Join(", ", vm.FlagWaveBuffIds)}]");
+                System.Diagnostics.Debug.WriteLine($"[旗帜波词条] FlagWaveBuffIdsComboBox_SelectionChanged: 已设置 vm.FlagWaveBuffIds");
             }
         }
 
@@ -549,10 +561,6 @@ namespace PVZRHTools
                 return;
             }
 
-            // 支持：逗号/中文逗号/分号/空格/换行 分隔
-            // 支持格式：A0, U1, D0（数字从0开始，A0=Advanced第0个词条）
-            // 还支持：A:0, U:0, D:0 或编码ID（1000+为Ultimate，2000+为Debuff）
-            var parts = text.Split(new[] { ',', '，', ';', '；', '\n', '\r', '\t', ' ' }, StringSplitOptions.RemoveEmptyEntries);
             var ids = new List<int>();
             int advancedCount = App.InitData.Value.AdvBuffs.Length; // Advanced Buff的数量
             int ultimateCount = App.InitData.Value.UltiBuffs.Length; // Ultimate Buff的数量
@@ -560,115 +568,100 @@ namespace PVZRHTools
             
             System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 解析开始 - advancedCount={advancedCount}, ultimateCount={ultimateCount}, ultimateStartIndex={ultimateStartIndex}, InGameBuffs.Count={vm.InGameBuffs?.Count ?? 0}");
             
-            foreach (var p in parts)
+            // 检查是否包含括号，如果包含则使用新格式解析
+            bool hasBrackets = text.Contains('(') || text.Contains('（') || text.Contains(')') || text.Contains('）');
+            
+            if (hasBrackets)
             {
-                var part = p.Trim();
-                int id = -1;
+                // 新格式：使用括号分组，每个括号代表一个旗子
+                // 例如：(a1,u2)()(d3,a0)
+                System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 检测到括号格式，使用新格式解析");
                 
-                System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 开始解析输入: '{part}' (长度={part.Length}, 第一个字符='{(part.Length > 0 ? part[0] : '?')}')");
+                // 提取所有括号内的内容
+                var bracketPattern = new System.Text.RegularExpressions.Regex(@"[(（]([^)）]*)[)）]");
+                var matches = bracketPattern.Matches(text);
                 
-                // 支持格式：A0, U1, D0（数字从0开始，使用OriginalId）
-                if (part.Length >= 2 && (part[0] == 'A' || part[0] == 'a'))
+                if (matches.Count == 0)
                 {
-                    if (int.TryParse(part.Substring(1), out var advNum) && advNum >= 0)
+                    System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 警告: 未找到任何括号，但文本包含括号字符");
+                }
+                
+                foreach (System.Text.RegularExpressions.Match match in matches)
+                {
+                    string bracketContent = match.Groups[1].Value.Trim();
+                    System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 解析括号内容: '{bracketContent}'");
+                    
+                    // 如果括号为空，添加分隔符 -1 表示这个旗子不解锁任何词条
+                    if (string.IsNullOrWhiteSpace(bracketContent))
                     {
-                        // 找到第 advNum 个Advanced词条，使用其OriginalId
-                        // Advanced词条在 InGameBuffs 的前 advancedCount 个位置
-                        if (vm.InGameBuffs != null && advNum < advancedCount && advNum < vm.InGameBuffs.Count)
+                        ids.Add(-1); // 使用 -1 作为分隔符，表示一个旗子结束（即使这个旗子没有词条）
+                        System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 空括号，添加分隔符 -1");
+                        continue;
+                    }
+                    
+                    // 解析括号内的词条（支持逗号/中文逗号/分号/空格分隔）
+                    var parts = bracketContent.Split(new[] { ',', '，', ';', '；', '\n', '\r', '\t', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    
+                    foreach (var p in parts)
+                    {
+                        var part = p.Trim();
+                        int id = ParseBuffId(part, vm, advancedCount, ultimateCount, ultimateStartIndex);
+                        
+                        if (id >= 0)
                         {
-                            var buff = vm.InGameBuffs[advNum];
-                            if (buff.TravelBuff.Index < ultimateStartIndex) // 确保是Advanced词条
-                            {
-                                id = buff.TravelBuff.OriginalId; // 使用OriginalId（游戏中的字典键）
-                                System.Diagnostics.Debug.WriteLine($"解析 A{advNum}: 找到词条 Index={buff.TravelBuff.Index}, OriginalId={buff.TravelBuff.OriginalId}, 编码ID={id}");
-                            }
+                            ids.Add(id);
+                            System.Diagnostics.Debug.WriteLine($"[旗帜波词条] ✓ 添加编码ID: {id} (来自输入: '{part}')");
+                        }
+                        else
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[旗帜波词条] ✗ 警告: 无法解析输入 '{part}'，跳过");
                         }
                     }
+                    
+                    // 每个括号结束后添加分隔符 -1（除非是最后一个括号）
+                    ids.Add(-1); // 使用 -1 作为分隔符，表示一个旗子的词条结束
+                    System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 括号结束，添加分隔符 -1");
                 }
-                else if (part.Length >= 2 && (part[0] == 'U' || part[0] == 'u'))
+            }
+            else
+            {
+                // 旧格式：兼容原有的逗号分隔格式（所有词条作为一个旗帜波）
+                System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 未检测到括号，使用旧格式解析（所有词条作为一个旗帜波）");
+                
+                var parts = text.Split(new[] { ',', '，', ';', '；', '\n', '\r', '\t', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                
+                foreach (var p in parts)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 检测到 U/u 开头，准备解析: part='{part}', 子串='{part.Substring(1)}'");
-                    if (int.TryParse(part.Substring(1), out var ultNum) && ultNum >= 0)
+                    var part = p.Trim();
+                    int id = ParseBuffId(part, vm, advancedCount, ultimateCount, ultimateStartIndex);
+                    
+                    if (id >= 0)
                     {
-                        // Ultimate词条：使用 ultNum 作为数组索引（而不是字典键）
-                        // ultimateUpgrades 数组的索引对应 InGameBuffs 中 Ultimate 词条的顺序（从0开始）
-                        // 所以 U2 应该编码为 1000 + 2 = 1002，解码后使用 2 作为 ultimateUpgrades[2] 的索引
-                        // 注意：即使 ultNum 超出范围，也强制编码为 1000 + ultNum，让游戏端处理范围检查
-                        id = 1000 + ultNum; // Ultimate: 编码ID = 1000 + ultNum（数组索引）
-                        System.Diagnostics.Debug.WriteLine($"[旗帜波词条] ✓ 解析 U{ultNum} 成功: ultNum={ultNum}, ultimateCount={ultimateCount}, 编码ID={id} (1000+ultNum)");
-                        if (ultNum >= ultimateCount)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 警告: U{ultNum} 超出范围 (ultimateCount={ultimateCount})，但已编码为 {id}，将由游戏端处理");
-                        }
+                        ids.Add(id);
+                        System.Diagnostics.Debug.WriteLine($"[旗帜波词条] ✓ 添加编码ID: {id} (来自输入: '{part}')");
                     }
                     else
                     {
-                        System.Diagnostics.Debug.WriteLine($"[旗帜波词条] ✗ 解析 U 开头词条失败: 无法解析数字部分 '{part.Substring(1)}'");
+                        System.Diagnostics.Debug.WriteLine($"[旗帜波词条] ✗ 警告: 无法解析输入 '{part}'，跳过");
                     }
-                }
-                else if (part.Length >= 2 && (part[0] == 'D' || part[0] == 'd'))
-                {
-                    if (int.TryParse(part.Substring(1), out var debNum) && debNum >= 0)
-                    {
-                        // 找到第 debNum 个Debuff词条，使用其OriginalId
-                        if (vm.InGameDebuffs != null && debNum < vm.InGameDebuffs.Count)
-                        {
-                            var buff = vm.InGameDebuffs[debNum];
-                            id = 2000 + buff.TravelBuff.OriginalId; // 使用OriginalId（游戏中的字典键）
-                            System.Diagnostics.Debug.WriteLine($"解析 D{debNum}: 找到词条 Index={buff.TravelBuff.Index}, OriginalId={buff.TravelBuff.OriginalId}, 编码ID={id}");
-                        }
-                    }
-                }
-                // 支持旧格式：A:0, U:0, D:0
-                else if (part.StartsWith("A:", StringComparison.OrdinalIgnoreCase) || part.StartsWith("A：", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (int.TryParse(part.Substring(2), out var advId))
-                        id = advId; // Advanced: 0-999
-                }
-                else if (part.StartsWith("U:", StringComparison.OrdinalIgnoreCase) || part.StartsWith("U：", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (int.TryParse(part.Substring(2), out var ultId))
-                        id = 1000 + ultId; // Ultimate: 1000-1999
-                }
-                else if (part.StartsWith("D:", StringComparison.OrdinalIgnoreCase) || part.StartsWith("D：", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (int.TryParse(part.Substring(2), out var debId))
-                        id = 2000 + debId; // Debuff: 2000-2999
-                }
-                // 支持直接输入编码ID（但排除以 U/u/A/a/D/d 开头的字符串，避免误解析）
-                else if (!part.StartsWith("U", StringComparison.OrdinalIgnoreCase) &&
-                         !part.StartsWith("A", StringComparison.OrdinalIgnoreCase) &&
-                         !part.StartsWith("D", StringComparison.OrdinalIgnoreCase) &&
-                         int.TryParse(part, out var encodedId))
-                {
-                    id = encodedId;
-                    System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 直接解析为编码ID: {id} (来自输入: '{part}')");
                 }
                 
-                if (id >= 0)
+                // 旧格式：添加分隔符 -1 表示一个旗子结束
+                if (ids.Count > 0)
                 {
-                    ids.Add(id);
-                    System.Diagnostics.Debug.WriteLine($"[旗帜波词条] ✓ 添加编码ID: {id} (来自输入: '{part}')");
-                    
-                    // 验证：如果是 U 开头的输入，编码ID应该是 1000+
-                    if ((part.StartsWith("U", StringComparison.OrdinalIgnoreCase) || part.StartsWith("U:", StringComparison.OrdinalIgnoreCase) || part.StartsWith("U：", StringComparison.OrdinalIgnoreCase)) && id < 1000)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[旗帜波词条] ✗✗✗ 严重错误: Ultimate词条 '{part}' 的编码ID应该是1000+，但实际是{id}！这会导致被错误地解码为Advanced词条！");
-                        System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 调试信息: part='{part}', part.Length={part.Length}, part[0]='{(part.Length > 0 ? part[0] : '?')}'");
-                    }
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine($"[旗帜波词条] ✗ 警告: 无法解析输入 '{part}'，跳过 (id={id})");
+                    ids.Add(-1);
                 }
             }
 
             // 覆盖顺序：按输入顺序直接作为"每旗解锁"的顺序
             System.Diagnostics.Debug.WriteLine($"[旗帜波词条] ========== 解析完成 ==========");
             System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 最终 ids 列表: [{string.Join(", ", ids)}]");
-            System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 准备设置 vm.FlagWaveBuffIds = [{string.Join(", ", ids)}]");
+            System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 准备设置 vm.FlagWaveBuffIds");
             vm.FlagWaveBuffIds = ids;
             System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 已设置 vm.FlagWaveBuffIds，当前值: [{string.Join(", ", vm.FlagWaveBuffIds)}]");
+            
+            // 更新文本框显示（如果用户修改了文本，这里会重新生成）
+            // 注意：这里不更新文本框，因为用户可能正在编辑，只有在按钮点击时才更新
 
             // 同步到多选框（仅用于可视化勾选；多选框本身不保证顺序）
             try
@@ -679,12 +672,18 @@ namespace PVZRHTools
                     System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 开始同步到多选框，设置 _isUpdatingComboBox = true");
                     FlagWaveBuffIdsComboBox.SelectedItems?.Clear();
                     
-                    // 使用外部作用域中已定义的 ultimateStartIndex
-                    foreach (var encodedId in ids)
+                    // 遍历所有旗帜波的词条
+                    if (vm.FlagWaveBuffIds != null)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 同步到多选框: 处理编码ID={encodedId}");
-                        
-                        bool found = false;
+                        foreach (var encodedId in vm.FlagWaveBuffIds)
+                        {
+                            // 跳过 -1 分隔符
+                            if (encodedId == -1)
+                                continue;
+                                
+                            System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 同步到多选框: 处理编码ID={encodedId}");
+                            
+                            bool found = false;
                         
                         if (encodedId >= 2000)
                         {
@@ -752,9 +751,10 @@ namespace PVZRHTools
                             }
                         }
                         
-                        if (!found)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 警告: 未找到编码ID={encodedId} 对应的多选框项");
+                            if (!found)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 警告: 未找到编码ID={encodedId} 对应的多选框项");
+                            }
                         }
                     }
                     _isUpdatingComboBox = false; // 清除标志
@@ -898,6 +898,317 @@ namespace PVZRHTools
                         }
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// 解析词条ID（支持 A0, U1, D0 格式）
+        /// </summary>
+        private int ParseBuffId(string part, ModifierViewModel vm, int advancedCount, int ultimateCount, int ultimateStartIndex)
+        {
+            int id = -1;
+            
+            System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 开始解析输入: '{part}' (长度={part.Length}, 第一个字符='{(part.Length > 0 ? part[0] : '?')}')");
+            
+            // 支持格式：A0, U1, D0（数字从0开始，使用OriginalId）
+            if (part.Length >= 2 && (part[0] == 'A' || part[0] == 'a'))
+            {
+                if (int.TryParse(part.Substring(1), out var advNum) && advNum >= 0)
+                {
+                    // 找到第 advNum 个Advanced词条，使用其OriginalId
+                    // Advanced词条在 InGameBuffs 的前 advancedCount 个位置
+                    if (vm.InGameBuffs != null && advNum < advancedCount && advNum < vm.InGameBuffs.Count)
+                    {
+                        var buff = vm.InGameBuffs[advNum];
+                        if (buff.TravelBuff.Index < ultimateStartIndex) // 确保是Advanced词条
+                        {
+                            id = buff.TravelBuff.OriginalId; // 使用OriginalId（游戏中的字典键）
+                            System.Diagnostics.Debug.WriteLine($"解析 A{advNum}: 找到词条 Index={buff.TravelBuff.Index}, OriginalId={buff.TravelBuff.OriginalId}, 编码ID={id}");
+                        }
+                    }
+                }
+            }
+            else if (part.Length >= 2 && (part[0] == 'U' || part[0] == 'u'))
+            {
+                System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 检测到 U/u 开头，准备解析: part='{part}', 子串='{part.Substring(1)}'");
+                if (int.TryParse(part.Substring(1), out var ultNum) && ultNum >= 0)
+                {
+                    // Ultimate词条：使用 ultNum 作为数组索引（而不是字典键）
+                    id = 1000 + ultNum; // Ultimate: 编码ID = 1000 + ultNum（数组索引）
+                    System.Diagnostics.Debug.WriteLine($"[旗帜波词条] ✓ 解析 U{ultNum} 成功: ultNum={ultNum}, ultimateCount={ultimateCount}, 编码ID={id} (1000+ultNum)");
+                    if (ultNum >= ultimateCount)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 警告: U{ultNum} 超出范围 (ultimateCount={ultimateCount})，但已编码为 {id}，将由游戏端处理");
+                    }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[旗帜波词条] ✗ 解析 U 开头词条失败: 无法解析数字部分 '{part.Substring(1)}'");
+                }
+            }
+            else if (part.Length >= 2 && (part[0] == 'D' || part[0] == 'd'))
+            {
+                if (int.TryParse(part.Substring(1), out var debNum) && debNum >= 0)
+                {
+                    // 找到第 debNum 个Debuff词条，使用其OriginalId
+                    if (vm.InGameDebuffs != null && debNum < vm.InGameDebuffs.Count)
+                    {
+                        var buff = vm.InGameDebuffs[debNum];
+                        id = 2000 + buff.TravelBuff.OriginalId; // 使用OriginalId（游戏中的字典键）
+                        System.Diagnostics.Debug.WriteLine($"解析 D{debNum}: 找到词条 Index={buff.TravelBuff.Index}, OriginalId={buff.TravelBuff.OriginalId}, 编码ID={id}");
+                    }
+                }
+            }
+            // 支持旧格式：A:0, U:0, D:0
+            else if (part.StartsWith("A:", StringComparison.OrdinalIgnoreCase) || part.StartsWith("A：", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(part.Substring(2), out var advId))
+                    id = advId; // Advanced: 0-999
+            }
+            else if (part.StartsWith("U:", StringComparison.OrdinalIgnoreCase) || part.StartsWith("U：", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(part.Substring(2), out var ultId))
+                    id = 1000 + ultId; // Ultimate: 1000-1999
+            }
+            else if (part.StartsWith("D:", StringComparison.OrdinalIgnoreCase) || part.StartsWith("D：", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(part.Substring(2), out var debId))
+                    id = 2000 + debId; // Debuff: 2000-2999
+            }
+            // 支持直接输入编码ID（但排除以 U/u/A/a/D/d 开头的字符串，避免误解析）
+            else if (!part.StartsWith("U", StringComparison.OrdinalIgnoreCase) &&
+                     !part.StartsWith("A", StringComparison.OrdinalIgnoreCase) &&
+                     !part.StartsWith("D", StringComparison.OrdinalIgnoreCase) &&
+                     int.TryParse(part, out var encodedId))
+            {
+                id = encodedId;
+                System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 直接解析为编码ID: {id} (来自输入: '{part}')");
+            }
+            
+            // 验证：如果是 U 开头的输入，编码ID应该是 1000+
+            if (id >= 0 && (part.StartsWith("U", StringComparison.OrdinalIgnoreCase) || part.StartsWith("U:", StringComparison.OrdinalIgnoreCase) || part.StartsWith("U：", StringComparison.OrdinalIgnoreCase)) && id < 1000)
+            {
+                System.Diagnostics.Debug.WriteLine($"[旗帜波词条] ✗✗✗ 严重错误: Ultimate词条 '{part}' 的编码ID应该是1000+，但实际是{id}！这会导致被错误地解码为Advanced词条！");
+                System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 调试信息: part='{part}', part.Length={part.Length}, part[0]='{(part.Length > 0 ? part[0] : '?')}'");
+            }
+            
+            return id;
+        }
+        
+        /// <summary>
+        /// 更新旗帜波词条文本框，将数据转换为括号格式文本
+        /// </summary>
+        private void UpdateFlagWaveBuffTextBox(List<List<int>> waves)
+        {
+            if (FlagWaveBuffOrderIdsTextBox == null || waves == null) return;
+            
+            var parts = new List<string>();
+            
+            foreach (var wave in waves)
+            {
+                if (wave == null || wave.Count == 0)
+                {
+                    parts.Add("()"); // 空括号
+                }
+                else
+                {
+                    var buffStrs = new List<string>();
+                    foreach (var encodedId in wave)
+                    {
+                        string buffStr = EncodeBuffIdToString(encodedId);
+                        if (!string.IsNullOrEmpty(buffStr))
+                        {
+                            buffStrs.Add(buffStr);
+                        }
+                    }
+                    parts.Add($"({string.Join(",", buffStrs)})");
+                }
+            }
+            
+            string text = string.Join("", parts);
+            FlagWaveBuffOrderIdsTextBox.Text = text;
+            System.Diagnostics.Debug.WriteLine($"[旗帜波词条] 更新文本框: {text}");
+        }
+        
+        /// <summary>
+        /// 将编码ID转换为字符串格式（a1, u2, d3等）
+        /// </summary>
+        private string EncodeBuffIdToString(int encodedId)
+        {
+            if (encodedId >= 2000)
+            {
+                // Debuff: d + (encodedId - 2000)
+                return $"d{encodedId - 2000}";
+            }
+            else if (encodedId >= 1000)
+            {
+                // Ultimate: u + (encodedId - 1000)
+                return $"u{encodedId - 1000}";
+            }
+            else if (encodedId >= 0)
+            {
+                // Advanced: a + encodedId
+                return $"a{encodedId}";
+            }
+            return "";
+        }
+        
+        /// <summary>
+        /// 处理旗帜波词条选择改变事件（通用方法）
+        /// </summary>
+        private void HandleFlagWaveBuffSelectionChanged(object sender, SelectionChangedEventArgs e, int waveIndex)
+        {
+            if (DataContext is ModifierViewModel vm && sender is HandyControl.Controls.CheckComboBox comboBox)
+            {
+                System.Diagnostics.Debug.WriteLine($"[旗帜波词条高级] FlagWave{waveIndex}BuffsComboBox_SelectionChanged: 多选框选择改变");
+                var selectedItems = comboBox.SelectedItems;
+                var ids = new List<int>();
+                
+                // 计算Advanced Buff的数量（InGameBuffs中不包含Debuff）
+                int advancedCount = App.InitData.Value.AdvBuffs.Length;
+                int ultimateCount = App.InitData.Value.UltiBuffs.Length;
+                int ultimateStartIndex = advancedCount;
+                
+                foreach (var item in selectedItems)
+                {
+                    if (item is TravelBuffVM buffVm)
+                    {
+                        int encodedId;
+                        if (buffVm.TravelBuff.Debuff)
+                        {
+                            encodedId = 2000 + buffVm.TravelBuff.OriginalId;
+                        }
+                        else if (buffVm.TravelBuff.Index >= ultimateStartIndex)
+                        {
+                            int arrayIndex = buffVm.TravelBuff.Index - ultimateStartIndex;
+                            encodedId = 1000 + arrayIndex;
+                        }
+                        else
+                        {
+                            encodedId = buffVm.TravelBuff.OriginalId;
+                        }
+                        ids.Add(encodedId);
+                    }
+                }
+                
+                // 根据waveIndex设置对应的属性
+                switch (waveIndex)
+                {
+                    case 1: vm.FlagWave1Buffs = ids; break;
+                    case 2: vm.FlagWave2Buffs = ids; break;
+                    case 3: vm.FlagWave3Buffs = ids; break;
+                    case 4: vm.FlagWave4Buffs = ids; break;
+                    case 5: vm.FlagWave5Buffs = ids; break;
+                    case 6: vm.FlagWave6Buffs = ids; break;
+                    case 7: vm.FlagWave7Buffs = ids; break;
+                    case 8: vm.FlagWave8Buffs = ids; break;
+                    case 9: vm.FlagWave9Buffs = ids; break;
+                    case 10: vm.FlagWave10Buffs = ids; break;
+                }
+                
+                System.Diagnostics.Debug.WriteLine($"[旗帜波词条高级] FlagWave{waveIndex}BuffsComboBox_SelectionChanged: 已设置 ids = [{string.Join(", ", ids)}]");
+                
+                // 自动同步到Tab2的"词条ID顺序"文本框
+                SyncAdvancedFlagWaveBuffsToTextBox(vm);
+            }
+        }
+        
+        /// <summary>
+        /// 将Tab10中10个旗帜波的词条配置同步到Tab2的"词条ID顺序"文本框
+        /// </summary>
+        private void SyncAdvancedFlagWaveBuffsToTextBox(ModifierViewModel vm)
+        {
+            if (FlagWaveBuffOrderIdsTextBox == null) return;
+            
+            // 收集10个旗帜波的词条列表
+            var waves = new List<List<int>>
+            {
+                vm.FlagWave1Buffs ?? new List<int>(),
+                vm.FlagWave2Buffs ?? new List<int>(),
+                vm.FlagWave3Buffs ?? new List<int>(),
+                vm.FlagWave4Buffs ?? new List<int>(),
+                vm.FlagWave5Buffs ?? new List<int>(),
+                vm.FlagWave6Buffs ?? new List<int>(),
+                vm.FlagWave7Buffs ?? new List<int>(),
+                vm.FlagWave8Buffs ?? new List<int>(),
+                vm.FlagWave9Buffs ?? new List<int>(),
+                vm.FlagWave10Buffs ?? new List<int>()
+            };
+            
+            // 使用现有的UpdateFlagWaveBuffTextBox方法更新文本框
+            UpdateFlagWaveBuffTextBox(waves);
+            
+            System.Diagnostics.Debug.WriteLine($"[旗帜波词条高级] 已同步到Tab2的文本框");
+        }
+        
+        private void FlagWave1BuffsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            HandleFlagWaveBuffSelectionChanged(sender, e, 1);
+        }
+        
+        private void FlagWave2BuffsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            HandleFlagWaveBuffSelectionChanged(sender, e, 2);
+        }
+        
+        private void FlagWave3BuffsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            HandleFlagWaveBuffSelectionChanged(sender, e, 3);
+        }
+        
+        private void FlagWave4BuffsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            HandleFlagWaveBuffSelectionChanged(sender, e, 4);
+        }
+        
+        private void FlagWave5BuffsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            HandleFlagWaveBuffSelectionChanged(sender, e, 5);
+        }
+        
+        private void FlagWave6BuffsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            HandleFlagWaveBuffSelectionChanged(sender, e, 6);
+        }
+        
+        private void FlagWave7BuffsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            HandleFlagWaveBuffSelectionChanged(sender, e, 7);
+        }
+        
+        private void FlagWave8BuffsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            HandleFlagWaveBuffSelectionChanged(sender, e, 8);
+        }
+        
+        private void FlagWave9BuffsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            HandleFlagWaveBuffSelectionChanged(sender, e, 9);
+        }
+        
+        private void FlagWave10BuffsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            HandleFlagWaveBuffSelectionChanged(sender, e, 10);
+        }
+        
+        /// <summary>
+        /// CheckComboBox的PreviewMouseWheel事件处理，阻止滚轮事件冒泡到ScrollViewer
+        /// 当下拉列表打开时，滚轮操作只影响下拉列表，不影响主界面滚动
+        /// </summary>
+        private void CheckComboBox_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (sender is HandyControl.Controls.CheckComboBox comboBox)
+            {
+                // 如果 CheckComboBox 的下拉列表打开，不阻止事件，让下拉列表自己处理滚轮
+                // 这样下拉列表内部的 ScrollViewer 可以正常滚动
+                if (comboBox.IsDropDownOpen)
+                {
+                    e.Handled = false;
+                    return;
+                }
+                
+                // 如果下拉列表未打开，阻止事件冒泡到ScrollViewer，防止主界面滚动
+                e.Handled = true;
             }
         }
     }

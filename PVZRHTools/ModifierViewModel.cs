@@ -692,8 +692,8 @@ public partial class ModifierViewModel : ObservableObject
     {
         // NextWave 必须作为“脉冲”发送（true -> false），否则 UI 侧/传输层可能会去重，导致只能生效一次
         try
-        {
-            App.DataSync.Value.SendData(new InGameActions { NextWave = true });
+    {
+        App.DataSync.Value.SendData(new InGameActions { NextWave = true });
             // 给一小段时间让游戏端 Update 消费到该值
             await Task.Delay(50);
             App.DataSync.Value.SendData(new InGameActions { NextWave = false });
@@ -987,13 +987,15 @@ public partial class ModifierViewModel : ObservableObject
 
     public void SyncFlagWaveBuffs()
     {
-        System.Diagnostics.Debug.WriteLine($"[旗帜波词条] SyncFlagWaveBuffs: FlagWaveBuffEnabled={FlagWaveBuffEnabled}, FlagWaveBuffIds=[{string.Join(", ", FlagWaveBuffIds ?? new List<int>())}]");
+        var idsStr = FlagWaveBuffIds != null ? string.Join(", ", FlagWaveBuffIds) : "null";
+        System.Diagnostics.Debug.WriteLine($"[旗帜波词条] SyncFlagWaveBuffs: FlagWaveBuffEnabled={FlagWaveBuffEnabled}, FlagWaveBuffIds=[{idsStr}]");
         App.DataSync.Value.SendData(new InGameActions
         {
             FlagWaveBuffEnabled = FlagWaveBuffEnabled,
-            FlagWaveBuffIds = FlagWaveBuffIds
+            FlagWaveBuffIds = FlagWaveBuffIds,
+            FlagWaveCustomTexts = null // Tab2（常用功能）不使用自定义字幕，设置为null
         });
-        System.Diagnostics.Debug.WriteLine($"[旗帜波词条] SyncFlagWaveBuffs: 数据已发送");
+        System.Diagnostics.Debug.WriteLine($"[旗帜波词条] SyncFlagWaveBuffs: 数据已发送（不使用自定义字幕）");
     }
 
     public void SyncTravelBuffs()
@@ -1808,7 +1810,7 @@ public partial class ModifierViewModel : ObservableObject
 
     [ObservableProperty] public partial double GameSpeed { get; set; }
 
-    [ObservableProperty] public partial bool GameSpeedEnabled { get; set; } = true;
+    [ObservableProperty] public partial bool GameSpeedEnabled { get; set; } = false;
 
     [ObservableProperty] public partial bool GarlicDay { get; set; }
 
@@ -1876,13 +1878,110 @@ public partial class ModifierViewModel : ObservableObject
     }
     
     /// <summary>
-    /// 旗帜波词条功能 - 要应用的词条ID列表
+    /// 旗帜波词条功能 - 要应用的词条ID列表（使用 -1 作为分隔符，表示一个旗子的词条结束）
     /// </summary>
     [ObservableProperty]
     private List<int> _flagWaveBuffIds = new List<int>();
     partial void OnFlagWaveBuffIdsChanged(List<int> value)
     {
         SyncFlagWaveBuffs();
+    }
+    
+    // 旗帜波词条高级配置 - 10个旗帜波，每个旗帜波有词条列表和自定义字幕
+    [ObservableProperty] public partial List<int> FlagWave1Buffs { get; set; } = new List<int>();
+    [ObservableProperty] public partial string FlagWave1CustomText { get; set; } = "";
+    
+    [ObservableProperty] public partial List<int> FlagWave2Buffs { get; set; } = new List<int>();
+    [ObservableProperty] public partial string FlagWave2CustomText { get; set; } = "";
+    
+    [ObservableProperty] public partial List<int> FlagWave3Buffs { get; set; } = new List<int>();
+    [ObservableProperty] public partial string FlagWave3CustomText { get; set; } = "";
+    
+    [ObservableProperty] public partial List<int> FlagWave4Buffs { get; set; } = new List<int>();
+    [ObservableProperty] public partial string FlagWave4CustomText { get; set; } = "";
+    
+    [ObservableProperty] public partial List<int> FlagWave5Buffs { get; set; } = new List<int>();
+    [ObservableProperty] public partial string FlagWave5CustomText { get; set; } = "";
+    
+    [ObservableProperty] public partial List<int> FlagWave6Buffs { get; set; } = new List<int>();
+    [ObservableProperty] public partial string FlagWave6CustomText { get; set; } = "";
+    
+    [ObservableProperty] public partial List<int> FlagWave7Buffs { get; set; } = new List<int>();
+    [ObservableProperty] public partial string FlagWave7CustomText { get; set; } = "";
+    
+    [ObservableProperty] public partial List<int> FlagWave8Buffs { get; set; } = new List<int>();
+    [ObservableProperty] public partial string FlagWave8CustomText { get; set; } = "";
+    
+    [ObservableProperty] public partial List<int> FlagWave9Buffs { get; set; } = new List<int>();
+    [ObservableProperty] public partial string FlagWave9CustomText { get; set; } = "";
+    
+    [ObservableProperty] public partial List<int> FlagWave10Buffs { get; set; } = new List<int>();
+    [ObservableProperty] public partial string FlagWave10CustomText { get; set; } = "";
+    
+    // 当任何旗帜波配置改变时，同步到游戏
+    partial void OnFlagWave1BuffsChanged(List<int> value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave1CustomTextChanged(string value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave2BuffsChanged(List<int> value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave2CustomTextChanged(string value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave3BuffsChanged(List<int> value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave3CustomTextChanged(string value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave4BuffsChanged(List<int> value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave4CustomTextChanged(string value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave5BuffsChanged(List<int> value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave5CustomTextChanged(string value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave6BuffsChanged(List<int> value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave6CustomTextChanged(string value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave7BuffsChanged(List<int> value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave7CustomTextChanged(string value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave8BuffsChanged(List<int> value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave8CustomTextChanged(string value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave9BuffsChanged(List<int> value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave9CustomTextChanged(string value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave10BuffsChanged(List<int> value) { SyncAdvancedFlagWaveBuffs(); }
+    partial void OnFlagWave10CustomTextChanged(string value) { SyncAdvancedFlagWaveBuffs(); }
+    
+    /// <summary>
+    /// 同步高级旗帜波词条配置到游戏
+    /// </summary>
+    private void SyncAdvancedFlagWaveBuffs()
+    {
+        // 将10个旗帜波的配置合并为FlagWaveBuffIds（使用-1分隔符）
+        var allBuffs = new List<int>();
+        var allCustomTexts = new List<string>();
+        
+        var waveBuffs = new[] { FlagWave1Buffs, FlagWave2Buffs, FlagWave3Buffs, FlagWave4Buffs, FlagWave5Buffs,
+                                FlagWave6Buffs, FlagWave7Buffs, FlagWave8Buffs, FlagWave9Buffs, FlagWave10Buffs };
+        var waveTexts = new[] { FlagWave1CustomText, FlagWave2CustomText, FlagWave3CustomText, FlagWave4CustomText, FlagWave5CustomText,
+                                FlagWave6CustomText, FlagWave7CustomText, FlagWave8CustomText, FlagWave9CustomText, FlagWave10CustomText };
+        
+        for (int i = 0; i < waveBuffs.Length; i++)
+        {
+            if (waveBuffs[i] != null && waveBuffs[i].Count > 0)
+            {
+                allBuffs.AddRange(waveBuffs[i]);
+            }
+            allBuffs.Add(-1); // 分隔符
+            
+            allCustomTexts.Add(waveTexts[i] ?? "");
+        }
+        
+        // 更新FlagWaveBuffIds（但不触发OnFlagWaveBuffIdsChanged，避免循环）
+        // 注意：这里直接设置字段，避免触发属性变更通知
+        var field = typeof(ModifierViewModel).GetField("_flagWaveBuffIds", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        if (field != null)
+        {
+            field.SetValue(this, allBuffs);
+        }
+        
+        // 发送到游戏
+        App.DataSync.Value.SendData(new InGameActions
+        {
+            FlagWaveBuffEnabled = FlagWaveBuffEnabled,
+            FlagWaveBuffIds = allBuffs,
+            FlagWaveCustomTexts = allCustomTexts
+        });
+        
+        System.Diagnostics.Debug.WriteLine($"[旗帜波词条高级] 已同步配置: {allBuffs.Count}个词条ID, {allCustomTexts.Count}个自定义字幕");
     }
     
     /// <summary>
