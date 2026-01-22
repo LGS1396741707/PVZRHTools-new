@@ -232,6 +232,16 @@ public struct InGameActions : ISyncData
     /// 召唤迷你雪皇
     /// </summary>
     public bool? PetSnowBoss { get; set; }
+    
+    /// <summary>
+    /// 旗帜波词条功能 - 是否启用
+    /// </summary>
+    public bool? FlagWaveBuffEnabled { get; set; }
+    
+    /// <summary>
+    /// 旗帜波词条功能 - 要应用的词条ID列表
+    /// </summary>
+    public List<int>? FlagWaveBuffIds { get; set; }
 }
 
 public struct InGameHotkeys : ISyncData

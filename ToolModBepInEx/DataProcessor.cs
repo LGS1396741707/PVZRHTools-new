@@ -1,4 +1,4 @@
-﻿
+
 //#define F1
 
 using System.Text.Json;
@@ -19,6 +19,11 @@ namespace ToolModBepInEx;
 
 public class DataProcessor : MonoBehaviour
 {
+    // NextWave 在 UI 侧通常会维持 true 一段时间（同步帧）。
+    // 若不做边沿触发，会反复执行“触发下一波”，导致 timeUntilNextWave 被反复重置（常见表现：一直卡 30 秒且不出怪）。
+    // 使用上一帧的 NextWave 值来检测边沿（false->true）
+    private static bool? _lastNextWaveValue = null;
+
     public DataProcessor() : base(ClassInjector.DerivedConstructorPointer<DataProcessor>())
     {
         ClassInjector.DerivedConstructorBody(this);
@@ -48,8 +53,8 @@ public class DataProcessor : MonoBehaviour
         new Thread(() =>
         {
             Thread.Sleep(3000);
-            DataSync.Instance.Value.SendData(new SyncAll());
-            DataSync.Instance.Value.SendData(new InGameHotkeys
+            DataSync.Instance.SendData(new SyncAll());
+            DataSync.Instance.SendData(new InGameHotkeys
                 { KeyCodes = [.. from i in Core.KeyBindings.Value select (int)i.Value] });
         })
         {
@@ -895,79 +900,59 @@ all");
             }
 
 
-            // 3.3.0版本中newZombieWaveCountDown字段已被移除，需要同时更新Board和BoardSpawner的波数，然后调用SummonZombies()
-            if (iga.NextWave is not null && iga.NextWave == true)
+            // 生成下一波僵尸（3.3.1：newZombieWaveCountDown 已移除）
+            // 关键点：原版出怪/加波数/设置 timeUntilNextWave=waveInterval 都在 Board.NewZombieUpdate 的
+            // `timeUntilNextWave < 0` 分支里完成；我们这里只负责“触发进入该分支”，不要手动 ++theWave / SummonZombies，
+            // 否则会打乱旗帜波(hugeWaveCountDown)状态机，出现“卡 30 秒且不出怪”。
+            
+            // 检测边沿：只在 false->true 或 null->true 时执行一次
+            bool currentNextWave = iga.NextWave == true;
+            bool shouldTrigger = false;
+            
+            if (currentNextWave)
+            {
+                // 当前帧 NextWave 为 true，检查上一帧是否为 false 或 null（边沿检测）
+                if (_lastNextWaveValue != true)
+                {
+                    shouldTrigger = true;
+                }
+            }
+            
+            // 更新上一帧的值
+            _lastNextWaveValue = currentNextWave;
+            
+            if (shouldTrigger)
             {
                 try
                 {
-                    // 检查游戏是否已初始化
                     if (Board.Instance != null && Board.Instance.theMaxWave > 0)
                     {
-                        // 优先尝试“按原生刷新逻辑”触发下一波：把倒计时归零
-                        // 说明：3.3.0 中存在 timeUntilNextWave / hugeWaveCountDown 两个计时器
-                        // 将其置为 0f 一般会在下一帧由 Board 的更新逻辑自然触发刷怪/大波事件
-                        try
-                        {
-                            Board.Instance.timeUntilNextWave = 0f;
-                            Board.Instance.hugeWaveCountDown = 0f;
-                            // 尝试立刻跑一次刷怪更新（失败也不影响回退逻辑）
-                            Board.Instance.NewZombieUpdate();
-                        }
-                        catch { }
+                        MLogger?.LogInfo($"[PVZRHTools] 生成下一波僵尸: 当前波数={Board.Instance.theWave}, 最大波数={Board.Instance.theMaxWave}");
+                        
+                        // 第 0 波时保证进度条可见（与原版表现一致）
+                        if (Board.Instance.theWave == 0 && InGameUI.Instance != null && InGameUI.Instance.LevProgress != null)
+                            InGameUI.Instance.LevProgress.SetActive(true);
 
-                        // 如果波数还没开始（theWave == 0），显示关卡进度条并开始第一波
-                        if (Board.Instance.theWave == 0)
-                        {
-                            // 显示关卡进度条（参考ZombieBoss2Remake第三阶段移除进度条的方法）
-                            if (InGameUI.Instance != null && InGameUI.Instance.LevProgress != null)
-                            {
-                                InGameUI.Instance.LevProgress.SetActive(true);
-                            }
-                            
-                            // 开始第一波：设置波数为1
-                            Board.Instance.theWave = 1;
-                            
-                            // 如果boardSpawner已初始化，同步更新并生成僵尸
-                            if (Board.Instance.boardSpawner != null)
-                            {
-                                Board.Instance.boardSpawner.theWave = Board.Instance.theWave;
-                                Board.Instance.boardSpawner.SummonZombies();
-                            }
-                        }
-                        // 如果第一波已经开始，正常生成下一波
-                        else if (Board.Instance.theWave > 0 
-                                 && Board.Instance.theWave < Board.Instance.theMaxWave
-                                 && Board.Instance.boardSpawner != null)
-                        {
-                            // 先增加波数（同时更新Board和BoardSpawner的波数）
-                            Board.Instance.theWave++;
-                            Board.Instance.boardSpawner.theWave = Board.Instance.theWave;
-                            
-                            // 然后调用SummonZombies()生成僵尸
-                            Board.Instance.boardSpawner.SummonZombies();
-                        }
+                        // 重置旗帜波检测状态：确保旗帜波变化能被 PatchMgr 的检测捕获
+                        PatchMgr.SetHugeWaveState(false);
+                        Board.Instance.isHugeWave = false;
+                        // 让巨浪倒计时从 0 起步（原版会在 5 秒后归零并放波）
+                        Board.Instance.hugeWaveCountDown = 0f;
+
+                        // 触发下一波：必须设置成负数，确保进入 `timeUntilNextWave < 0` 分支
+                        Board.Instance.timeUntilNextWave = -0.01f;
+                        Board.Instance.NewZombieUpdate();
+                        
+                        MLogger?.LogInfo($"[PVZRHTools] 生成下一波僵尸完成: 新波数={Board.Instance.theWave}, timeUntilNextWave={Board.Instance.timeUntilNextWave}");
+                    }
+                    else
+                    {
+                        MLogger?.LogWarning($"[PVZRHTools] 生成下一波僵尸失败: Board.Instance={Board.Instance != null}, theMaxWave={Board.Instance?.theMaxWave ?? 0}");
                     }
                 }
-                catch (System.Exception)
+                catch (System.Exception ex)
                 {
-                    // 如果出错，尝试回退波数
-                    try
-                    {
-                        if (Board.Instance != null && Board.Instance.theWave > 0)
-                        {
-                            Board.Instance.theWave--;
-                            // 如果boardSpawner存在，也回退它的波数
-                            if (Board.Instance.boardSpawner != null)
-                            {
-                                Board.Instance.boardSpawner.theWave = Board.Instance.theWave;
-                            }
-                        }
-                    }
-                    catch { }
-                    
-                    // 记录错误但不抛出，避免影响游戏运行
-                    // 如果需要在调试时查看错误，可以取消注释下面的代码
-                    // MLogger.LogError($"生成下一波僵尸失败: {ex.Message}");
+                    MLogger?.LogError($"[PVZRHTools] 生成下一波僵尸异常: {ex.Message}\n{ex.StackTrace}");
                 }
             }
 
@@ -1077,7 +1062,7 @@ all");
                     }
 
                     bases.AddRange(plants);
-                    DataSync.Instance.Value.SendData(new InGameActions
+                    DataSync.Instance.SendData(new InGameActions
                     {
                         WriteField = JsonSerializer.Serialize(bases)
                     });
@@ -1100,7 +1085,7 @@ all");
                     }
 
                     var lineupCode = string.Join(";", lineupData);
-                    DataSync.Instance.Value.SendData(new InGameActions
+                    DataSync.Instance.SendData(new InGameActions
                     {
                         WriteField = CompressString(lineupCode)
                     });
@@ -1123,7 +1108,7 @@ all");
                     });
                 }
 
-                DataSync.Instance.Value.SendData(new InGameActions
+                DataSync.Instance.SendData(new InGameActions
                 {
                     WriteVases = JsonSerializer.Serialize(vases)
                 });
@@ -1185,7 +1170,7 @@ all");
                                 Row = zombie.theZombieRow
                             });
 
-                    DataSync.Instance.Value.SendData(new InGameActions
+                    DataSync.Instance.SendData(new InGameActions
                     {
                         WriteZombies = JsonSerializer.Serialize(zombies)
                     });
@@ -1208,7 +1193,7 @@ all");
                     var zombieCode = string.Join(";", zombieDataList);
                     var compressedCode = CompressString(zombieCode); // GZIP压缩 + Base64编码
 
-                    DataSync.Instance.Value.SendData(new InGameActions
+                    DataSync.Instance.SendData(new InGameActions
                     {
                         WriteZombies = compressedCode // 发送压缩后的Base64字符串
                     });
@@ -1320,7 +1305,7 @@ all");
 
                 var result = PlantString + "|" + zombieString;
 
-                DataSync.Instance.Value.SendData(new InGameActions
+                DataSync.Instance.SendData(new InGameActions
                 {
                     WriteMix = result
                 });
@@ -1476,6 +1461,18 @@ all");
             {
                 var mousePos = Mouse.Instance.transform.position;
                 MiniPet.SetPet(Board.Instance, new Vector2(mousePos.x, mousePos.y), PetType.PetSnowBoss);
+            }
+
+            // 旗帜波词条功能设置
+            if (iga.FlagWaveBuffEnabled is not null)
+            {
+                PatchMgr.FlagWaveBuffEnabled = (bool)iga.FlagWaveBuffEnabled;
+            }
+            if (iga.FlagWaveBuffIds is not null)
+            {
+                MLogger?.LogInfo($"[PVZRHTools] DataProcessor: 接收到 FlagWaveBuffIds = [{string.Join(", ", iga.FlagWaveBuffIds)}]");
+                PatchMgr.FlagWaveBuffIds = iga.FlagWaveBuffIds;
+                MLogger?.LogInfo($"[PVZRHTools] DataProcessor: 已设置 PatchMgr.FlagWaveBuffIds = [{string.Join(", ", PatchMgr.FlagWaveBuffIds)}]");
             }
         }
 

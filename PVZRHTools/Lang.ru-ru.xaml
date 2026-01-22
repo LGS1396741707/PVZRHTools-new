@@ -1,4 +1,4 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:s="clr-namespace:System;assembly=mscorlib">
     <s:String x:Key="Modify">Смена</s:String>
@@ -170,6 +170,12 @@
     <s:String x:Key="Tab2.Page2.ClearAllHoles">Очистить все дыры</s:String>
     <s:String x:Key="Tab2.Page2.ChangeLevelName">Имя уровня</s:String>
     <s:String x:Key="Tab2.Page2.ShowText">Показать текст</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffEnabled">Функция баффов флаговой волны</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffIds">Баффы флаговой волны:</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds">Порядок ID баффов:</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Tooltip">Введите баффы по порядку, разделяя запятой/пробелом/переводом строки. Формат: A0=Продвинутый бафф №0, U1=Ультимативный бафф №1, D0=Дебафф №0. Пример: A0, U1, D0, A5</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Hint">Формат: A0=Продвинутый бафф №0, U1=Ультимативный бафф №1, D0=Дебафф №0 (номера начинаются с 0)</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Apply">Применить порядок ID</s:String>
     <s:String x:Key="Tab2.Page2.StartMower">Запустить газонокосилку</s:String>
     <s:String x:Key="Tab2.Page2.CreateMower">Создать газонокосилку</s:String>
     <s:String x:Key="Tab2.Page2.CreateMower.Tooltip">Не нажимайте слишком быстро, это может вызвать баги!</s:String>

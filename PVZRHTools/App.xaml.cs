@@ -60,8 +60,41 @@ public partial class App : Application
             if (e.Args[0] == CommandLineToken)
             {
                 DataSync = new Lazy<DataSync>(new DataSync(Convert.ToInt32(e.Args[1])));
-                InitData = JsonSerializer.Deserialize(File.ReadAllText("./PVZRHTools/InitData.json"),
-                    InitDataSGC.Default.InitData);
+                
+                // 延迟读取 InitData.json，等待游戏完成 LateInit 并发送最新数据
+                // 如果游戏在 5 秒内发送了 InitData（通过 case 0），就使用发送的数据
+                // 如果 5 秒后还没有收到，就从文件读取作为后备方案
+                var timer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(5)
+                };
+                timer.Tick += (sender, args) =>
+                {
+                    timer.Stop();
+                    // 如果还没有收到游戏发送的 InitData，就从文件读取
+                    if (InitData == null)
+                    {
+                        try
+                        {
+                            if (File.Exists("./PVZRHTools/InitData.json"))
+                            {
+                                InitData = JsonSerializer.Deserialize(File.ReadAllText("./PVZRHTools/InitData.json"),
+                                    InitDataSGC.Default.InitData);
+                                // 如果 MainWindow 已经创建，重新加载词条列表
+                                var mainWindow = Current.MainWindow as MainWindow;
+                                if (mainWindow != null)
+                                {
+                                    mainWindow.ViewModel.ReloadBuffsFromInitData();
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            File.WriteAllText("./ModifierInitDataError.txt", $"从文件读取InitData失败: {ex.Message}\n{ex.StackTrace}");
+                        }
+                    }
+                };
+                timer.Start();
             }
             else
             {

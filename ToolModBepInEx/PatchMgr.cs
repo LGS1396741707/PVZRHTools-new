@@ -1,10 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP.Utils;
 using HarmonyLib;
@@ -113,7 +115,7 @@ public static class BoardPatchB
 {
     public static void Postfix()
     {
-        // 3.3.0版本中newZombieWaveCountDown字段已被移除，相关功能已禁用
+        // 3.3.1版本中newZombieWaveCountDown字段已被移除，相关功能已禁用
         try
         {
             // if (NewZombieUpdateCD > 0 && NewZombieUpdateCD < 30 &&
@@ -121,6 +123,325 @@ public static class BoardPatchB
             //     Board.Instance.newZombieWaveCountDown = NewZombieUpdateCD;
         }
         catch { }
+    }
+}
+
+/// <summary>
+/// 旗帜波词条功能 - 检测旗帜波并应用词条
+/// </summary>
+[HarmonyPatch(typeof(Board), "Update")]
+public static class BoardFlagWaveBuffPatch
+{
+    public static void Postfix(Board __instance)
+    {
+        try
+        {
+            if (!FlagWaveBuffEnabled || FlagWaveBuffIds == null || FlagWaveBuffIds.Count == 0)
+                return;
+
+            if (__instance == null || !InGame())
+                return;
+
+            // 检测旗帜波状态变化（从非旗帜波变为旗帜波）
+            bool currentHugeWave = __instance.isHugeWave;
+            bool wasHugeWave = _lastHugeWaveState;
+            _lastHugeWaveState = currentHugeWave;
+
+            // 只在进入旗帜波时应用词条（避免重复应用）
+            if (currentHugeWave && !wasHugeWave)
+            {
+                UnlockNextFlagWaveBuff();
+            }
+        }
+        catch (System.Exception ex)
+        {
+            MLogger?.LogError($"[PVZRHTools] 旗帜波词条检测失败: {ex.Message}\n{ex.StackTrace}");
+        }
+    }
+
+    /// <summary>
+    /// 旗帜波词条：按顺序每次只解锁 1 个词条（永久保持到本局结束）
+    /// </summary>
+    private static void UnlockNextFlagWaveBuff()
+    {
+        try
+        {
+            // 防重复解锁：检查当前波数是否已经解锁过
+            int currentWave = Board.Instance != null ? Board.Instance.theWave : -1;
+            if (currentWave == _lastUnlockWave)
+            {
+                // 同一波已经解锁过，跳过
+                return;
+            }
+            
+            var travelMgr = ResolveTravelMgr();
+            if (travelMgr == null)
+            {
+                MLogger?.LogWarning("[PVZRHTools] 无法找到 TravelMgr，无法应用旗帜波词条");
+                return;
+            }
+
+            if (_flagWaveUnlockIndex < 0) _flagWaveUnlockIndex = 0;
+            if (_flagWaveUnlockIndex >= FlagWaveBuffIds.Count)
+                return; // 已全部解锁
+
+            var encodedBuffId = FlagWaveBuffIds[_flagWaveUnlockIndex];
+            _flagWaveUnlockIndex++;
+            
+            // 记录当前波数，防止重复解锁
+            _lastUnlockWave = currentWave;
+
+            // 关键日志：记录原始编码ID，这是最重要的调试信息
+            MLogger?.LogInfo($"[PVZRHTools] ========== 旗帜波词条开始处理 ==========");
+            MLogger?.LogInfo($"[PVZRHTools] 原始编码ID: {encodedBuffId}, 当前波数: {currentWave}, 索引: {_flagWaveUnlockIndex - 1}/{FlagWaveBuffIds.Count}");
+
+            // 解码Buff ID，获取类型和原始ID
+            // 特别处理：如果编码ID在1000-1999范围内，强制识别为Ultimate类型
+            // 这是最关键的判断：任何 >= 1000 且 < 2000 的编码ID都必须是Ultimate类型
+            PatchMgr.BuffType buffType;
+            int originalId;
+            
+            // 严格按照编码规则解码：2000+ = Debuff, 1000-1999 = Ultimate, 0-999 = Advanced
+            if (encodedBuffId >= 2000)
+            {
+                buffType = PatchMgr.BuffType.Debuff;
+                originalId = encodedBuffId - 2000;
+                MLogger?.LogInfo($"[PVZRHTools] 旗帜波词条解码: 编码ID={encodedBuffId} -> Debuff, 原始ID={originalId}");
+            }
+            else if (encodedBuffId >= 1000 && encodedBuffId < 2000)
+            {
+                // 强制识别为Ultimate类型，避免被错误解码为Advanced
+                // 这是最关键的判断：任何在 1000-1999 范围内的编码ID都必须是Ultimate类型
+                buffType = PatchMgr.BuffType.Ultimate;
+                originalId = encodedBuffId - 1000;
+                MLogger?.LogInfo($"[PVZRHTools] 旗帜波词条解码: 编码ID={encodedBuffId} -> Ultimate (强制识别), 原始ID={originalId} (数组索引)");
+            }
+            else if (encodedBuffId >= 0 && encodedBuffId < 1000)
+            {
+                buffType = PatchMgr.BuffType.Advanced;
+                originalId = encodedBuffId;
+                MLogger?.LogInfo($"[PVZRHTools] 旗帜波词条解码: 编码ID={encodedBuffId} -> Advanced, 原始ID={originalId}");
+            }
+            else
+            {
+                // 无效的编码ID
+                MLogger?.LogError($"[PVZRHTools] 旗帜波词条解码失败: 无效的编码ID={encodedBuffId} (应该是 0-2999 范围内的整数)");
+                return; // 直接返回，不处理
+            }
+            string? buffName = null;
+            bool applied = false;
+
+            // 关键验证：如果编码ID在1000-1999范围内，绝对不能进入Advanced分支
+            if (encodedBuffId >= 1000 && encodedBuffId < 2000 && buffType == PatchMgr.BuffType.Advanced)
+            {
+                MLogger?.LogError($"[PVZRHTools] 严重错误: 编码ID={encodedBuffId} 在1000-1999范围内，但buffType被错误识别为Advanced！强制修正为Ultimate！");
+                buffType = PatchMgr.BuffType.Ultimate;
+                originalId = encodedBuffId - 1000;
+            }
+            
+            MLogger?.LogInfo($"[PVZRHTools] 解码结果: buffType={buffType}, originalId={originalId}, encodedBuffId={encodedBuffId}");
+            
+            switch (buffType)
+            {
+                case PatchMgr.BuffType.Advanced:
+                    // 高级词条：0..advancedCount-1（对应 advancedUpgrades[ID]）
+                    // 再次验证：如果编码ID在1000-1999范围内，绝对不能应用为Advanced
+                    if (encodedBuffId >= 1000 && encodedBuffId < 2000)
+                    {
+                        MLogger?.LogError($"[PVZRHTools] 严重错误: 尝试将编码ID={encodedBuffId} (应该是Ultimate) 应用为Advanced词条！直接返回，不处理！");
+                        return; // 直接返回，防止错误应用
+                    }
+                    
+                    if (travelMgr.advancedUpgrades != null &&
+                        originalId >= 0 && originalId < travelMgr.advancedUpgrades.Count)
+                    {
+                        travelMgr.advancedUpgrades[originalId] = true;
+                        TravelMgr.advancedBuffs?.TryGetValue(originalId, out buffName);
+                        
+                        // 关键修复：同时更新 InGameAdvBuffs 数组，确保一致性
+                        if (InGameAdvBuffs != null && originalId < InGameAdvBuffs.Length)
+                        {
+                            InGameAdvBuffs[originalId] = true;
+                            MLogger?.LogInfo($"[PVZRHTools] 已同步更新 InGameAdvBuffs[{originalId}] = true");
+                        }
+                        
+                        MLogger?.LogInfo($"[PVZRHTools] 旗帜波解锁高级词条 ID={originalId} (编码ID={encodedBuffId})");
+                        applied = true;
+                    }
+                    break;
+                    
+                case PatchMgr.BuffType.Ultimate:
+                    // 究极词条：originalId 是数组索引（参考 HeiTa 的实现）
+                    // 编码时：U46 -> 1000 + 46 = 1046
+                    // 解码后：originalId = 46，应该使用 46 作为 ultimateUpgrades[46] 的索引
+                    // 参考 HeiTa: travel.ultimateUpgrades[choice.index] = 1; TravelMgr.ultimateBuffs[choice.index]
+                    // 双重验证：确保编码ID在1000-1999范围内，且类型确实是Ultimate
+                    if (encodedBuffId < 1000 || encodedBuffId >= 2000)
+                    {
+                        MLogger?.LogError($"[PVZRHTools] 严重错误: Ultimate词条的编码ID={encodedBuffId} 不在1000-1999范围内！这不应该发生！");
+                        break; // 直接退出，不处理
+                    }
+                    if (buffType != PatchMgr.BuffType.Ultimate)
+                    {
+                        MLogger?.LogError($"[PVZRHTools] 严重错误: 编码ID={encodedBuffId} 应该对应Ultimate类型，但buffType={buffType}！强制修正为Ultimate类型。");
+                        buffType = PatchMgr.BuffType.Ultimate; // 强制修正
+                    }
+                    
+                    MLogger?.LogInfo($"[PVZRHTools] 开始应用Ultimate词条: encodedBuffId={encodedBuffId}, originalId={originalId} (数组索引), ultimateUpgrades.Count={travelMgr.ultimateUpgrades?.Count ?? 0}");
+                    
+                    if (travelMgr.ultimateUpgrades != null &&
+                        originalId >= 0 && originalId < travelMgr.ultimateUpgrades.Count)
+                    {
+                        // 参考 HeiTa 的实现：直接使用数组索引
+                        // 这是最关键的一步：使用 originalId 作为数组索引
+                        travelMgr.ultimateUpgrades[originalId] = 1;
+                        MLogger?.LogInfo($"[PVZRHTools] 已设置 ultimateUpgrades[{originalId}] = 1");
+                        
+                        // 关键修复：同时更新 InGameUltiBuffs 数组，确保一致性
+                        // 这样即使有其他逻辑从 InGameUltiBuffs 同步回 ultimateUpgrades，也不会覆盖我们的设置
+                        if (InGameUltiBuffs != null && originalId < InGameUltiBuffs.Length)
+                        {
+                            InGameUltiBuffs[originalId] = true;
+                            MLogger?.LogInfo($"[PVZRHTools] 已同步更新 InGameUltiBuffs[{originalId}] = true");
+                        }
+                        else
+                        {
+                            MLogger?.LogWarning($"[PVZRHTools] 无法同步更新 InGameUltiBuffs: originalId={originalId}, InGameUltiBuffs.Length={InGameUltiBuffs?.Length ?? 0}");
+                        }
+                        
+                        // 参考 HeiTa 的实现：直接使用数组索引作为字典键（假设字典键是连续的）
+                        if (TravelMgr.ultimateBuffs != null)
+                        {
+                            try
+                            {
+                                // 直接使用 originalId 作为字典键（参考 HeiTa: TravelMgr.ultimateBuffs[choice.index]）
+                                if (TravelMgr.ultimateBuffs.ContainsKey(originalId))
+                                {
+                                    TravelMgr.ultimateBuffs.TryGetValue(originalId, out buffName);
+                                    MLogger?.LogInfo($"[PVZRHTools] 从字典获取Ultimate词条名称: 字典键={originalId}, 词条名称={buffName ?? "未知"}");
+                                }
+                                else
+                                {
+                                    // 如果字典键不连续，尝试通过排序后的键列表找到对应的键
+                                    var keysList = new List<int>();
+                                    foreach (var key in TravelMgr.ultimateBuffs.Keys)
+                                        keysList.Add(key);
+                                    keysList.Sort();
+                                    if (originalId < keysList.Count)
+                                    {
+                                        var dictKey = keysList[originalId];
+                                        TravelMgr.ultimateBuffs.TryGetValue(dictKey, out buffName);
+                                        MLogger?.LogInfo($"[PVZRHTools] Ultimate词条字典键不连续: 数组索引={originalId}, 字典键={dictKey}, 词条名称={buffName ?? "未知"}");
+                                    }
+                                    else
+                                    {
+                                        MLogger?.LogWarning($"[PVZRHTools] Ultimate词条数组索引={originalId} 超出字典键列表范围 (字典键数量={keysList.Count})");
+                                    }
+                                }
+                            }
+                            catch (System.Exception ex)
+                            {
+                                MLogger?.LogWarning($"[PVZRHTools] 获取Ultimate词条名称失败: {ex.Message}\n{ex.StackTrace}");
+                            }
+                        }
+                        else
+                        {
+                            MLogger?.LogWarning($"[PVZRHTools] TravelMgr.ultimateBuffs 为 null，无法获取词条名称");
+                        }
+                        
+                        MLogger?.LogInfo($"[PVZRHTools] 旗帜波解锁究极词条成功: 数组索引={originalId}, 编码ID={encodedBuffId}, 词条名称={buffName ?? "未知"}");
+                        
+                        // 最终验证：确保没有错误地应用到Advanced
+                        if (travelMgr.advancedUpgrades != null && originalId < travelMgr.advancedUpgrades.Count)
+                        {
+                            bool wasAdvancedApplied = travelMgr.advancedUpgrades[originalId];
+                            if (wasAdvancedApplied)
+                            {
+                                MLogger?.LogWarning($"[PVZRHTools] 警告: 检测到 advancedUpgrades[{originalId}] 也被设置为true，这可能是之前的操作导致的");
+                            }
+                        }
+                        
+                        applied = true;
+                    }
+                    else
+                    {
+                        MLogger?.LogWarning($"[PVZRHTools] 旗帜波词条应用失败：Ultimate词条 数组索引={originalId} 超出范围 (数组大小={travelMgr.ultimateUpgrades?.Count ?? 0}, 编码ID={encodedBuffId})");
+                        // 即使超出范围，也记录详细信息以便调试
+                        if (travelMgr.ultimateUpgrades == null)
+                        {
+                            MLogger?.LogError($"[PVZRHTools] travelMgr.ultimateUpgrades 为 null！");
+                        }
+                        else if (originalId < 0)
+                        {
+                            MLogger?.LogError($"[PVZRHTools] originalId={originalId} 为负数！");
+                        }
+                        else if (originalId >= travelMgr.ultimateUpgrades.Count)
+                        {
+                            MLogger?.LogError($"[PVZRHTools] originalId={originalId} >= ultimateUpgrades.Count={travelMgr.ultimateUpgrades.Count}，数组越界！");
+                        }
+                    }
+                    break;
+                    
+                case PatchMgr.BuffType.Debuff:
+                    // 负面词条：使用 debuff[ID] (bool数组)
+                    if (travelMgr.debuff != null &&
+                        originalId >= 0 && originalId < travelMgr.debuff.Count)
+                    {
+                        travelMgr.debuff[originalId] = true;
+                        TravelMgr.debuffs?.TryGetValue(originalId, out buffName);
+                        
+                        // 关键修复：同时更新 InGameDebuffs 数组，确保一致性
+                        if (InGameDebuffs != null && originalId < InGameDebuffs.Length)
+                        {
+                            InGameDebuffs[originalId] = true;
+                            MLogger?.LogInfo($"[PVZRHTools] 已同步更新 InGameDebuffs[{originalId}] = true");
+                        }
+                        
+                        MLogger?.LogInfo($"[PVZRHTools] 旗帜波解锁负面词条 ID={originalId} (编码ID={encodedBuffId})");
+                        applied = true;
+                    }
+                    break;
+            }
+            
+            MLogger?.LogInfo($"[PVZRHTools] ========== 旗帜波词条处理完成 ==========");
+            MLogger?.LogInfo($"[PVZRHTools] 最终结果: applied={applied}, buffType={buffType}, originalId={originalId}, encodedBuffId={encodedBuffId}, buffName={buffName ?? "未知"}");
+            
+            if (!applied)
+            {
+                MLogger?.LogWarning($"[PVZRHTools] 旗帜波词条应用失败：类型={buffType}, 原始ID={originalId}, 编码ID={encodedBuffId}");
+            }
+
+            // 设置 BoardTag 标志，使游戏识别并应用词条效果
+            if (Board.Instance != null && GameAPP.board != null)
+            {
+                var board = GameAPP.board.GetComponent<Board>();
+                if (board != null)
+                {
+                    var boardTag = board.boardTag;
+                    boardTag.isTravel = true;
+                    boardTag.enableTravelBuff = true;
+                    Board.Instance.boardTag = boardTag;
+                }
+            }
+
+            // 显示“解锁的词条名”（不再用自定义文本）
+            try
+            {
+                if (InGameText.Instance != null)
+                {
+                    var text = string.IsNullOrEmpty(buffName) ? $"解锁词条：{encodedBuffId}" : $"解锁词条：{buffName}";
+                    InGameText.Instance.ShowText(text, 5);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                MLogger?.LogWarning($"[PVZRHTools] 显示旗帜波解锁文本失败: {ex.Message}");
+            }
+        }
+        catch (System.Exception ex)
+        {
+            MLogger?.LogError($"[PVZRHTools] 应用旗帜波词条失败: {ex.Message}\n{ex.StackTrace}");
+        }
     }
 }
 
@@ -1279,7 +1600,7 @@ public static class UnlimitedSunlightPatches
         {
             if (__instance != null)
             {
-                int countInt = (int)count;  // 3.3.0版本UseSun参数类型为float，需要转换为int
+                int countInt = (int)count;  // 3.3.1版本UseSun参数类型为float，需要转换为int
                 __instance.theSun -= countInt;
                 __instance.theUsedSun += countInt;
             }
@@ -3013,9 +3334,35 @@ public static class ProgressMgrPatchB
             if (ShowGameInfo)
             {
                 infoChild.GameObject().active = true;
-                // 3.3.0版本中newZombieWaveCountDown字段已被移除
+                // 使用 timeUntilNextWave 显示刷新CD（3.3.1版本中newZombieWaveCountDown字段已被移除）
+                float refreshCD = 0f;
+                int currentWave = 0;
+                int maxWave = 0;
+                if (Board.Instance != null)
+                {
+                    refreshCD = Board.Instance.timeUntilNextWave;
+                    currentWave = Board.Instance.theWave;
+                    maxWave = Board.Instance.theMaxWave;
+                    
+                    // 如果刷新CD为0或负数，但游戏还在进行中（不是最后一波），
+                    // 可能是刚刚触发了"生成下一波"，此时等待游戏更新 timeUntilNextWave
+                    // 如果游戏还没有更新（通常会在 NewZombieUpdate() 中更新），
+                    // 则使用 NewZombieUpdateCD 作为临时显示值
+                    if (refreshCD <= 0f && currentWave > 0 && currentWave < maxWave)
+                    {
+                        // 检查 NewZombieUpdateCD 是否有效（通常在 0-30 秒之间）
+                        if (NewZombieUpdateCD > 0f && NewZombieUpdateCD <= 30f)
+                        {
+                            // 使用 NewZombieUpdateCD 作为临时显示值
+                            // 游戏会在 NewZombieUpdate() 中更新 timeUntilNextWave
+                            refreshCD = NewZombieUpdateCD;
+                        }
+                        // 如果 NewZombieUpdateCD 无效，保持 refreshCD 为 0，显示 "N/A"
+                    }
+                }
+                string cdText = refreshCD > 0f ? $"{refreshCD:F1}" : "N/A";
                 infoChild.GameObject().GetComponent<TextMeshProUGUI>().text =
-                    $"波数: {Board.Instance.theWave}/{Board.Instance.theMaxWave} 刷新CD: N/A";
+                    $"波数: {currentWave}/{maxWave} 刷新CD: {cdText}";
             }
             else
             {
@@ -4020,6 +4367,76 @@ public class PatchMgr : MonoBehaviour
     public static bool[] InGameAdvBuffs { get; set; } = [];
     public static bool[] InGameDebuffs { get; set; } = [];
     public static bool[] InGameUltiBuffs { get; set; } = [];
+    
+    /// <summary>
+    /// 旗帜波词条功能 - 是否启用
+    /// </summary>
+    public static bool FlagWaveBuffEnabled { get; set; } = false;
+    
+    /// <summary>
+    /// 旗帜波词条功能 - 要应用的词条ID列表
+    /// </summary>
+    public static List<int> FlagWaveBuffIds { get; set; } = new List<int>();
+    
+    /// <summary>
+    /// 旗帜波词条功能 - 上一次检测到的旗帜波状态（用于检测状态变化）
+    /// </summary>
+    public static bool _lastHugeWaveState = false;
+    
+    /// <summary>
+    /// 旗帜波词条功能 - 手动设置旗帜波状态时同步更新此标志（防止快速点击时重复触发）
+    /// </summary>
+    public static void SetHugeWaveState(bool isHugeWave)
+    {
+        _lastHugeWaveState = isHugeWave;
+    }
+
+    /// <summary>
+    /// 旗帜波词条功能 - 当前已解锁到第几个（每次旗帜波 +1）
+    /// </summary>
+    public static int _flagWaveUnlockIndex = 0;
+    
+    /// <summary>
+    /// 旗帜波词条功能 - 上一次解锁时的波数（用于防重复解锁）
+    /// </summary>
+    public static int _lastUnlockWave = -1;
+    
+    /// <summary>
+    /// Buff类型枚举
+    /// </summary>
+    public enum BuffType
+    {
+        Advanced = 0,  // 高级词条: 0-999
+        Ultimate = 1,  // 究极词条: 1000-1999
+        Debuff = 2     // 负面词条: 2000-2999
+    }
+    
+    /// <summary>
+    /// 编码Buff ID：将类型和原始ID编码为统一ID
+    /// Advanced: 0-999, Ultimate: 1000-1999, Debuff: 2000-2999
+    /// </summary>
+    public static int EncodeBuffId(BuffType type, int originalId)
+    {
+        return type switch
+        {
+            BuffType.Advanced => originalId,                    // 0-999
+            BuffType.Ultimate => 1000 + originalId,           // 1000-1999
+            BuffType.Debuff => 2000 + originalId,             // 2000-2999
+            _ => originalId
+        };
+    }
+    
+    /// <summary>
+    /// 解码Buff ID：从编码ID中提取类型和原始ID
+    /// </summary>
+    public static (BuffType type, int originalId) DecodeBuffId(int encodedId)
+    {
+        if (encodedId >= 2000)
+            return (BuffType.Debuff, encodedId - 2000);
+        if (encodedId >= 1000)
+            return (BuffType.Ultimate, encodedId - 1000);
+        return (BuffType.Advanced, encodedId);
+    }
     public static bool ItemExistForever { get; set; } = false;
     public static int JachsonSummonType { get; set; } = 7;
     public static bool JackboxNotExplode { get; set; } = false;
@@ -4664,6 +5081,7 @@ public class PatchMgr : MonoBehaviour
 
     public static IEnumerator PostInitBoard()
     {
+        MLogger?.LogInfo("[PVZRHTools] PostInitBoard: 开始执行");
         // 使用统一的 TravelMgr 获取方法，防止与 Modified-Plus 冲突
         var travelMgr = ResolveTravelMgr();
         if (travelMgr == null)
@@ -4768,6 +5186,12 @@ public class PatchMgr : MonoBehaviour
         InGameAdvBuffs = new bool[TravelMgr.advancedBuffs.Count];
         InGameUltiBuffs = new bool[TravelMgr.ultimateBuffs.Count];
         InGameDebuffs = new bool[TravelMgr.debuffs.Count];
+        
+        // 重置旗帜波状态检测
+        _lastHugeWaveState = false;
+        _flagWaveUnlockIndex = 0;
+        _lastUnlockWave = -1;
+        
         yield return null;
 
         // 安全地复制数组，防止越界
@@ -4797,6 +5221,25 @@ public class PatchMgr : MonoBehaviour
         }
         yield return null;
         new Thread(SyncInGameBuffs).Start();
+
+        // 进入游戏后重新读取所有词条（包括MOD添加的），并发送给UI
+        // MOD词条通常在TravelMgr.Awake中注册，需要等待更长时间确保所有MOD都完成注册
+        MLogger?.LogInfo("[PVZRHTools] PostInitBoard: 准备重新读取词条数据（第1次）");
+        yield return new WaitForSeconds(1.5f); // 等待MOD词条注册完成（增加到1.5秒）
+        MLogger?.LogInfo("[PVZRHTools] PostInitBoard: 开始重新读取词条数据（第1次）");
+        ReloadAndSendBuffsData();
+        
+        // 再次延迟后重试一次，确保捕获所有MOD词条（包括延迟注册的MOD）
+        MLogger?.LogInfo("[PVZRHTools] PostInitBoard: 准备重新读取词条数据（第2次）");
+        yield return new WaitForSeconds(1.5f);
+        MLogger?.LogInfo("[PVZRHTools] PostInitBoard: 开始重新读取词条数据（第2次）");
+        ReloadAndSendBuffsData();
+        
+        // 第三次重试，确保万无一失
+        MLogger?.LogInfo("[PVZRHTools] PostInitBoard: 准备重新读取词条数据（第3次）");
+        yield return new WaitForSeconds(1.0f);
+        MLogger?.LogInfo("[PVZRHTools] PostInitBoard: 开始重新读取词条数据（第3次）");
+        ReloadAndSendBuffsData();
 
         yield return null;
         if (ZombieSeaLow && SeaTypes.Count > 0)
@@ -4847,7 +5290,7 @@ public class PatchMgr : MonoBehaviour
                 return;
             }
             
-            DataSync.Instance.Value.SendData(new SyncTravelBuff
+            DataSync.Instance.SendData(new SyncTravelBuff
             {
                 AdvInGame = [.. travelMgr.advancedUpgrades],
                 UltiInGame = [.. GetBoolArray(travelMgr.ultimateUpgrades)],
@@ -4857,6 +5300,194 @@ public class PatchMgr : MonoBehaviour
         catch (System.Exception ex)
         {
             MLogger?.LogError($"[PVZRHTools] SyncInGameBuffs 异常: {ex.Message}\n{ex.StackTrace}");
+        }
+    }
+
+    /// <summary>
+    /// 重新读取所有词条数据（包括MOD添加的）并发送给UI
+    /// 在进入游戏后调用，确保MOD词条已注册
+    /// </summary>
+    public static void ReloadAndSendBuffsData()
+    {
+        try
+        {
+            MLogger?.LogInfo("[PVZRHTools] ReloadAndSendBuffsData: 开始执行");
+            var travelMgr = ResolveTravelMgr();
+            if (travelMgr == null)
+            {
+                MLogger?.LogWarning("[PVZRHTools] ReloadAndSendBuffsData: 无法找到 TravelMgr 组件");
+                return;
+            }
+            if (TravelMgr.advancedBuffs == null || TravelMgr.ultimateBuffs == null || TravelMgr.debuffs == null)
+            {
+                MLogger?.LogWarning("[PVZRHTools] ReloadAndSendBuffsData: 词条数据未初始化");
+                MLogger?.LogInfo($"[PVZRHTools] ReloadAndSendBuffsData: advancedBuffs={TravelMgr.advancedBuffs?.GetType().Name}, ultimateBuffs={TravelMgr.ultimateBuffs?.GetType().Name}, debuffs={TravelMgr.debuffs?.GetType().Name}");
+                return;
+            }
+            MLogger?.LogInfo($"[PVZRHTools] ReloadAndSendBuffsData: TravelMgr 已找到，词条数量 - Advanced={TravelMgr.advancedBuffs.Count}, Ultimate={TravelMgr.ultimateBuffs.Count}, Debuff={TravelMgr.debuffs.Count}");
+
+            // 遍历所有键值对以确保捕获所有词条（包括MOD添加的不连续ID词条）
+            List<string> advBuffs = [];
+            int maxAdvKey = -1;
+            // 先找出最大键值
+            foreach (var kvp in TravelMgr.advancedBuffs)
+            {
+                if (kvp.Key > maxAdvKey) maxAdvKey = kvp.Key;
+            }
+            // 然后从0到最大键值遍历，使用TryGetValue检查
+            for (int i = 0; i <= maxAdvKey; i++)
+            {
+                string buffText = null;
+                if (TravelMgr.advancedBuffs.TryGetValue(i, out buffText) && !string.IsNullOrEmpty(buffText))
+                {
+                    advBuffs.Add($"#{i} {buffText}");
+                    MLogger?.LogInfo($"[PVZRHTools] 重新读取高级词条: #{i} {buffText}");
+                }
+            }
+
+            List<string> ultiBuffs = [];
+            int maxUltiKey = -1;
+            // 先找出最大键值
+            foreach (var kvp in TravelMgr.ultimateBuffs)
+            {
+                if (kvp.Key > maxUltiKey) maxUltiKey = kvp.Key;
+            }
+            // 然后从0到最大键值遍历，使用TryGetValue检查
+            for (int i = 0; i <= maxUltiKey; i++)
+            {
+                string buffText = null;
+                if (TravelMgr.ultimateBuffs.TryGetValue(i, out buffText) && !string.IsNullOrEmpty(buffText))
+                {
+                    ultiBuffs.Add($"#{i} {buffText}");
+                    MLogger?.LogInfo($"[PVZRHTools] 重新读取究极词条: #{i} {buffText}");
+                }
+            }
+
+            List<string> debuffs = [];
+            int maxDebuffKey = -1;
+            // 先找出最大键值
+            foreach (var kvp in TravelMgr.debuffs)
+            {
+                if (kvp.Key > maxDebuffKey) maxDebuffKey = kvp.Key;
+            }
+            // 然后从0到最大键值遍历，使用TryGetValue检查
+            for (int i = 0; i <= maxDebuffKey; i++)
+            {
+                string buffText = null;
+                if (TravelMgr.debuffs.TryGetValue(i, out buffText) && !string.IsNullOrEmpty(buffText))
+                {
+                    debuffs.Add($"#{i} {buffText}");  // 添加 # 前缀，与 Advanced 和 Ultimate 保持一致
+                    MLogger?.LogInfo($"[PVZRHTools] 重新读取负面词条: #{i} {buffText}");
+                }
+            }
+
+            // 更新本地数组大小（如果MOD添加了新词条）
+            // 使用最大键值+1作为数组大小
+            int newAdvSize = maxAdvKey + 1;
+            if (AdvBuffs == null || AdvBuffs.Length < newAdvSize)
+            {
+                var oldLength = AdvBuffs?.Length ?? 0;
+                var newArray = new bool[newAdvSize];
+                if (AdvBuffs != null)
+                    Array.Copy(AdvBuffs, newArray, Math.Min(oldLength, newArray.Length));
+                AdvBuffs = newArray;
+            }
+
+            int newUltiSize = maxUltiKey + 1;
+            if (UltiBuffs == null || UltiBuffs.Length < newUltiSize)
+            {
+                var oldLength = UltiBuffs?.Length ?? 0;
+                var newArray = new bool[newUltiSize];
+                if (UltiBuffs != null)
+                    Array.Copy(UltiBuffs, newArray, Math.Min(oldLength, newArray.Length));
+                UltiBuffs = newArray;
+            }
+
+            int newDebuffSize = maxDebuffKey + 1;
+            if (Debuffs == null || Debuffs.Length < newDebuffSize)
+            {
+                var oldLength = Debuffs?.Length ?? 0;
+                var newArray = new bool[newDebuffSize];
+                if (Debuffs != null)
+                    Array.Copy(Debuffs, newArray, Math.Min(oldLength, newArray.Length));
+                Debuffs = newArray;
+            }
+
+            // 更新并保存InitData
+            // 先读取现有的InitData（保留Plants、Zombies等数据，但不使用旧的词条数据）
+            InitData data = new()
+            {
+                AdvBuffs = [.. advBuffs],  // 使用最新读取的词条数据
+                UltiBuffs = [.. ultiBuffs],  // 使用最新读取的词条数据
+                Debuffs = [.. debuffs]  // 使用最新读取的词条数据
+            };
+
+            // 读取现有的InitData（仅保留Plants、Zombies、Bullets等非词条数据）
+            try
+            {
+                if (File.Exists("./PVZRHTools/InitData.json"))
+                {
+                    try
+                    {
+                        var existingJson = File.ReadAllText("./PVZRHTools/InitData.json");
+                        var existingData = System.Text.Json.JsonSerializer.Deserialize<InitData>(existingJson);
+                        // 只保留非词条数据，词条数据使用上面最新读取的
+                        if (existingData.Plants != null && existingData.Plants.Count > 0)
+                        {
+                            data.Plants = existingData.Plants;
+                        }
+                        if (existingData.Zombies != null && existingData.Zombies.Count > 0)
+                        {
+                            data.Zombies = existingData.Zombies;
+                        }
+                        if (existingData.Bullets != null && existingData.Bullets.Count > 0)
+                        {
+                            data.Bullets = existingData.Bullets;
+                        }
+                        if (existingData.FirstArmors != null && existingData.FirstArmors.Count > 0)
+                        {
+                            data.FirstArmors = existingData.FirstArmors;
+                        }
+                        if (existingData.SecondArmors != null && existingData.SecondArmors.Count > 0)
+                        {
+                            data.SecondArmors = existingData.SecondArmors;
+                        }
+                        MLogger?.LogInfo($"[PVZRHTools] ReloadAndSendBuffsData: 从旧文件保留了 Plants={data.Plants?.Count ?? 0}, Zombies={data.Zombies?.Count ?? 0}, Bullets={data.Bullets?.Count ?? 0}");
+                    }
+                    catch (System.Exception ex2)
+                    {
+                        MLogger?.LogWarning($"[PVZRHTools] 读取现有InitData失败: {ex2.Message}");
+                    }
+                }
+                else
+                {
+                    MLogger?.LogInfo("[PVZRHTools] ReloadAndSendBuffsData: InitData.json 不存在，将创建新文件");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                MLogger?.LogWarning($"[PVZRHTools] 读取现有InitData失败: {ex.Message}");
+            }
+
+            // 保存更新后的InitData
+            Directory.CreateDirectory("./PVZRHTools");
+            File.WriteAllText("./PVZRHTools/InitData.json", System.Text.Json.JsonSerializer.Serialize(data));
+
+            // 发送更新后的词条数据给UI
+            try
+            {
+                MLogger?.LogInfo($"[PVZRHTools] 准备发送词条数据: Advanced={advBuffs.Count}, Ultimate={ultiBuffs.Count}, Debuff={debuffs.Count}");
+                DataSync.Instance.SendData(data);
+                MLogger?.LogInfo($"[PVZRHTools] 已重新读取并发送词条数据: Advanced={advBuffs.Count}, Ultimate={ultiBuffs.Count}, Debuff={debuffs.Count}");
+            }
+            catch (System.Exception ex)
+            {
+                MLogger?.LogWarning($"[PVZRHTools] 发送词条数据失败: {ex.Message}");
+            }
+        }
+        catch (System.Exception ex)
+        {
+            MLogger?.LogError($"[PVZRHTools] ReloadAndSendBuffsData 异常: {ex.Message}\n{ex.StackTrace}");
         }
     }
 

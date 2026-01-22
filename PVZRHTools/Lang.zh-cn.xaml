@@ -182,6 +182,12 @@
     <s:String x:Key="Tab2.Page2.ClearAllHoles">清除所有坑洞</s:String>
     <s:String x:Key="Tab2.Page2.ChangeLevelName">修改关卡名称</s:String>
     <s:String x:Key="Tab2.Page2.ShowText">显示字幕</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffEnabled">旗帜波词条功能</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffIds">旗帜波词条：</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds">词条ID顺序：</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Tooltip">按顺序输入词条，用逗号/空格/换行分隔。格式：A0=高级词条第0个，U1=究极词条第1个，D0=负面词条第0个。示例：A0, U1, D0, A5</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Hint">格式提示：A0=高级词条第0个，U1=究极词条第1个，D0=负面词条第0个（数字从0开始）</s:String>
+    <s:String x:Key="Tab2.Page2.FlagWaveBuffOrderIds.Apply">按ID顺序应用</s:String>
     <s:String x:Key="Tab2.Page2.StartMower">启动所有小推车</s:String>
     <s:String x:Key="Tab2.Page2.CreateMower">生成小推车</s:String>
     <s:String x:Key="Tab2.Page2.CreateMower.Tooltip">不要点太快！否则会出bug!</s:String>

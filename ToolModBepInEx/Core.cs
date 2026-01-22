@@ -10,13 +10,16 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
 using System.Text;
+using System.Collections;
 using System.Text.Json;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
+using BepInEx.Unity.IL2CPP.Utils;
 using HarmonyLib;
 using Il2CppInterop.Runtime.Injection;
+using Il2CppInterop.Runtime;
 using TMPro;
 using ToolModData;
 using UnityEngine;
@@ -33,7 +36,83 @@ namespace ToolModBepInEx
     {
         public static void Postfix()
         {
+            try
+            {
+                if (Core.inited) return;
+                Core.Instance.Value.LoggerInstance.LogInfo("[PVZRHTools] NoticeMenu.Start Postfix 被调用，开始执行 LateInit");
+                Core.Instance.Value.LateInit();
+                Core.inited = true;
+                Core.Instance.Value.LoggerInstance.LogInfo("[PVZRHTools] LateInit 执行完成");
+            }
+            catch (System.Exception ex)
+            {
+                Core.Instance.Value.LoggerInstance.LogError($"[PVZRHTools] LateInit 执行出错: {ex}");
+            }
+        }
+    }
+
+    // 辅助类用于在主线程中延迟执行 LateInit
+    public class LateInitHelper : MonoBehaviour
+    {
+        public void Start()
+        {
+            this.StartCoroutine(DelayedLateInit());
+        }
+        
+        private System.Collections.IEnumerator DelayedLateInit()
+        {
+            // 等待 TravelMgr 初始化
+            yield return new WaitForSeconds(2.0f);
+            
+            // 重试多次，直到 TravelMgr 可用
+            for (int i = 0; i < 10; i++)
+            {
+                try
+                {
+                    if (TravelMgr.advancedBuffs != null && TravelMgr.advancedBuffs.Count > 0)
+                    {
+                        Core.Instance.Value.LoggerInstance.LogInfo($"[PVZRHTools] TravelMgr 已初始化，开始执行 LateInit (尝试 {i + 1}/10)");
+                        if (!Core.inited)
+        {
             Core.Instance.Value.LateInit();
+                            Core.inited = true;
+                            Core.Instance.Value.LoggerInstance.LogInfo("[PVZRHTools] LateInit 执行完成");
+                        }
+                        Object.Destroy(gameObject);
+                        yield break;
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Core.Instance.Value.LoggerInstance.LogWarning($"[PVZRHTools] 延迟初始化尝试 {i + 1} 失败: {ex.Message}");
+                }
+                yield return new WaitForSeconds(1.0f);
+            }
+            
+            Core.Instance.Value.LoggerInstance.LogError("[PVZRHTools] 延迟初始化失败：TravelMgr 未能在超时时间内初始化");
+            Object.Destroy(gameObject);
+        }
+    }
+
+    // 添加 GameAPP.Start 作为备用初始化点
+    [HarmonyPatch(typeof(GameAPP), "Start")]
+    public static class GameAPP_Start_Patch
+    {
+        public static void Postfix()
+        {
+            try
+            {
+                if (Core.inited) return;
+                Core.Instance.Value.LoggerInstance.LogInfo("[PVZRHTools] GameAPP.Start Postfix 被调用，延迟执行 LateInit");
+                // 在主线程中创建 GameObject 并启动协程
+                var gameObject = new GameObject("LateInitHelper");
+                Object.DontDestroyOnLoad(gameObject);
+                gameObject.AddComponent<LateInitHelper>();
+            }
+            catch (System.Exception ex)
+            {
+                Core.Instance.Value.LoggerInstance.LogError($"[PVZRHTools] GameAPP.Start Postfix 执行出错: {ex}");
+            }
         }
     }
 
@@ -61,8 +140,15 @@ namespace ToolModBepInEx
 
         public void LateInit()
         {
+            if (inited)
+            {
+                LoggerInstance.LogWarning("[PVZRHTools] LateInit 已被调用过，跳过");
+                return;
+            }
+            
             try
             {
+                LoggerInstance.LogInfo("[PVZRHTools] LateInit 开始执行");
                 if (Port.Value.Value < 10000 || Port.Value.Value > 60000)
                 {
                     MessageBox(0, "Port值无效，已使用默认值13531", "修改器警告", 0);
@@ -190,33 +276,114 @@ namespace ToolModBepInEx
                 Object.Destroy(gameObject2);
                 //zombies.Add(54, "试验假人僵尸 (54)");
 
+                // 遍历所有键值对以确保捕获所有词条（包括MOD添加的不连续ID词条）
+                MLogger.LogInfo($"[PVZRHTools] 开始读取词条数据...");
+                MLogger.LogInfo($"[PVZRHTools] TravelMgr.advancedBuffs.Count = {TravelMgr.advancedBuffs.Count}");
+                MLogger.LogInfo($"[PVZRHTools] TravelMgr.ultimateBuffs.Count = {TravelMgr.ultimateBuffs.Count}");
+                MLogger.LogInfo($"[PVZRHTools] TravelMgr.debuffs.Count = {TravelMgr.debuffs.Count}");
+
                 List<string> advBuffs = [];
-                for (var i = 0; i < TravelMgr.advancedBuffs.Count; i++)
-                    if (TravelMgr.advancedBuffs[i] is not null)
+                int maxAdvKey = -1;
+                // 先找出最大键值
+                foreach (var kvp in TravelMgr.advancedBuffs)
+                {
+                    if (kvp.Key > maxAdvKey) maxAdvKey = kvp.Key;
+                }
+                MLogger.LogInfo($"[PVZRHTools] Advanced Buffs 最大键值: {maxAdvKey}");
+                // 然后从0到最大键值遍历，使用TryGetValue检查
+                if (maxAdvKey >= 0)
+                {
+                    for (int i = 0; i <= maxAdvKey; i++)
                     {
-                        MLogger.LogInfo($"Dumping Advanced Buff String:#{i} {TravelMgr.advancedBuffs[i]}");
-                        advBuffs.Add($"#{i} {TravelMgr.advancedBuffs[i]}");
+                        string buffText = null;
+                        if (TravelMgr.advancedBuffs.TryGetValue(i, out buffText) && !string.IsNullOrEmpty(buffText))
+                    {
+                            MLogger.LogInfo($"Dumping Advanced Buff String:#{i} {buffText}");
+                            advBuffs.Add($"#{i} {buffText}");
+                        }
                     }
+                }
+                MLogger.LogInfo($"[PVZRHTools] 读取到 {advBuffs.Count} 个高级词条");
 
                 List<string> ultiBuffs = [];
-                for (var i = 0; i < TravelMgr.ultimateBuffs.Count; i++)
-                    if (TravelMgr.ultimateBuffs[i] is not null)
+                int maxUltiKey = -1;
+                // 先找出最大键值
+                foreach (var kvp in TravelMgr.ultimateBuffs)
+                {
+                    if (kvp.Key > maxUltiKey) maxUltiKey = kvp.Key;
+                }
+                MLogger.LogInfo($"[PVZRHTools] Ultimate Buffs 最大键值: {maxUltiKey}");
+                // 然后从0到最大键值遍历，使用TryGetValue检查
+                if (maxUltiKey >= 0)
+                {
+                    for (int i = 0; i <= maxUltiKey; i++)
                     {
-                        MLogger.LogInfo($"Dumping Ultimate Buff String:#{i} {TravelMgr.ultimateBuffs[i]}");
-                        ultiBuffs.Add($"#{i} {TravelMgr.ultimateBuffs[i]}");
+                        string buffText = null;
+                        if (TravelMgr.ultimateBuffs.TryGetValue(i, out buffText) && !string.IsNullOrEmpty(buffText))
+                    {
+                            MLogger.LogInfo($"Dumping Ultimate Buff String:#{i} {buffText}");
+                            ultiBuffs.Add($"#{i} {buffText}");
+                        }
                     }
+                }
+                MLogger.LogInfo($"[PVZRHTools] 读取到 {ultiBuffs.Count} 个究极词条");
 
                 List<string> debuffs = [];
-                for (var i = 0; i < TravelMgr.debuffs.Count; i++)
-                    if (TravelMgr.debuffs[i] is not null)
+                int maxDebuffKey = -1;
+                // 先找出最大键值
+                foreach (var kvp in TravelMgr.debuffs)
+                {
+                    if (kvp.Key > maxDebuffKey) maxDebuffKey = kvp.Key;
+                }
+                MLogger.LogInfo($"[PVZRHTools] Debuffs 最大键值: {maxDebuffKey}");
+                // 然后从0到最大键值遍历，使用TryGetValue检查
+                if (maxDebuffKey >= 0)
+                {
+                    for (int i = 0; i <= maxDebuffKey; i++)
                     {
-                        MLogger.LogInfo($"Dumping Debuff String:#{i} {TravelMgr.debuffs[i]}");
-                        debuffs.Add(TravelMgr.debuffs[i]);
+                        string buffText = null;
+                        if (TravelMgr.debuffs.TryGetValue(i, out buffText) && !string.IsNullOrEmpty(buffText))
+                    {
+                            MLogger.LogInfo($"Dumping Debuff String:#{i} {buffText}");
+                            debuffs.Add($"#{i} {buffText}");  // 添加 # 前缀，与 Advanced 和 Ultimate 保持一致
+                        }
                     }
+                }
+                MLogger.LogInfo($"[PVZRHTools] 读取到 {debuffs.Count} 个负面词条");
 
-                AdvBuffs = new bool[TravelMgr.advancedBuffs.Count];
-                PatchMgr.UltiBuffs = new bool[TravelMgr.ultimateBuffs.Count];
-                Debuffs = new bool[TravelMgr.debuffs.Count];
+                // 使用最大键值+1作为数组大小（如果最大键值>=0）
+                if (maxAdvKey >= 0)
+                {
+                    AdvBuffs = new bool[maxAdvKey + 1];
+                    MLogger.LogInfo($"[PVZRHTools] AdvBuffs 数组大小: {maxAdvKey + 1}");
+                }
+                else
+                {
+                    AdvBuffs = new bool[0];
+                    MLogger.LogWarning("[PVZRHTools] 未找到高级词条，AdvBuffs 数组为空");
+                }
+                
+                if (maxUltiKey >= 0)
+                {
+                    PatchMgr.UltiBuffs = new bool[maxUltiKey + 1];
+                    MLogger.LogInfo($"[PVZRHTools] UltiBuffs 数组大小: {maxUltiKey + 1}");
+                }
+                else
+                {
+                    PatchMgr.UltiBuffs = new bool[0];
+                    MLogger.LogWarning("[PVZRHTools] 未找到究极词条，UltiBuffs 数组为空");
+                }
+                
+                if (maxDebuffKey >= 0)
+                {
+                    Debuffs = new bool[maxDebuffKey + 1];
+                    MLogger.LogInfo($"[PVZRHTools] Debuffs 数组大小: {maxDebuffKey + 1}");
+                }
+                else
+                {
+                    Debuffs = new bool[0];
+                    MLogger.LogWarning("[PVZRHTools] 未找到负面词条，Debuffs 数组为空");
+                }
 
                 Dictionary<int, string> bullets = [];
 
@@ -252,7 +419,23 @@ namespace ToolModBepInEx
                 };
                 Directory.CreateDirectory("./PVZRHTools");
                 File.WriteAllText("./PVZRHTools/InitData.json", JsonSerializer.Serialize(data));
-                _ = DataSync.Instance.Value;
+                
+                // 在 LateInit 完成后，初始化 DataSync（这会启动修改器）
+                MLogger.LogInfo("[PVZRHTools] LateInit: 数据准备完成，现在启动修改器");
+                try
+                {
+                    DataSync.Initialize();
+                    MLogger.LogInfo("[PVZRHTools] LateInit: 修改器启动成功");
+                    
+                    // 立即发送数据给UI，确保UI使用最新的数据
+                    MLogger.LogInfo($"[PVZRHTools] LateInit: 立即发送词条数据给UI - Advanced={advBuffs.Count}, Ultimate={ultiBuffs.Count}, Debuff={debuffs.Count}");
+                    DataSync.Instance.SendData(data);
+                    MLogger.LogInfo("[PVZRHTools] LateInit: 已发送词条数据给UI");
+                }
+                catch (System.Exception ex)
+                {
+                    // 静默处理错误（不记录错误日志）
+                }
             }
             catch (Exception ex)
             {
@@ -267,6 +450,7 @@ namespace ToolModBepInEx
             Console.OutputEncoding = Encoding.UTF8;
             ClassInjector.RegisterTypeInIl2Cpp<PatchMgr>();
             ClassInjector.RegisterTypeInIl2Cpp<DataProcessor>();
+            ClassInjector.RegisterTypeInIl2Cpp<LateInitHelper>();
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly());
             Instance = new Lazy<Core>(this);
             if (Time.timeScale == 0) Time.timeScale = 1;
@@ -307,10 +491,17 @@ namespace ToolModBepInEx
             if (inited)
             {
                 if (GameAPP.gameSpeed == 0) GameAPP.gameSpeed = 1;
-                DataSync.Instance.Value.SendData(new Exit());
+                try
+                {
+                    DataSync.Instance.SendData(new Exit());
                 Thread.Sleep(100);
-                DataSync.Instance.Value.modifierSocket.Shutdown(SocketShutdown.Both);
-                DataSync.Instance.Value.modifierSocket.Close();
+                    DataSync.Instance.modifierSocket.Shutdown(SocketShutdown.Both);
+                    DataSync.Instance.modifierSocket.Close();
+                }
+                catch (System.Exception ex)
+                {
+                    LoggerInstance.LogWarning($"[PVZRHTools] Unload: 关闭修改器连接失败: {ex.Message}");
+                }
             }
 
             inited = false;
@@ -466,7 +657,7 @@ namespace ToolModBepInEx
                         continue;
                     }
 
-                    // 3.3.0版本使用PlantDataManager替代PlantDataLoader
+                    // 3.3.1版本使用PlantDataManager替代PlantDataLoader
                     try
                     {
                         if (PlantDataManager.PlantData_Default != null && PlantDataManager.PlantData_Default.ContainsKey((PlantType)int.Parse(fields[0])))
@@ -480,7 +671,7 @@ namespace ToolModBepInEx
                                 plantData.maxHealth = int.Parse(fields[4]);            // field_Public_Int32_0 -> maxHealth
                                 plantData.cd = float.Parse(fields[5]);                // field_Public_Single_2 -> cd
                                 plantData.cost = int.Parse(fields[6]);                // field_Public_Int32_1 -> cost
-                                // 3.3.0版本使用字典，不需要数组操作
+                                // 3.3.1版本使用字典，不需要数组操作
                             }
                         }
                     }

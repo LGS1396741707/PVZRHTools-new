@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -15,6 +15,7 @@ public class DataSync
     public byte[] buffer;
     public bool closed;
     public Socket modifierSocket;
+    private StringBuilder dataBuffer = new StringBuilder(); // 累积接收的数据
 
     public DataSync(int port)
     {
@@ -33,6 +34,63 @@ public class DataSync
         {
             modifierSocket.Shutdown(SocketShutdown.Both);
             modifierSocket.Close();
+        }
+    }
+
+    private void ProcessBufferedData()
+    {
+        // 尝试从缓冲区中提取完整的 JSON 对象
+        var data = dataBuffer.ToString();
+        if (string.IsNullOrWhiteSpace(data)) return;
+        
+        // 通过计算大括号的匹配来找到完整的 JSON 对象
+        int braceCount = 0;
+        int startIndex = -1;
+        int processedLength = 0;
+        
+        for (int i = 0; i < data.Length; i++)
+        {
+            if (data[i] == '{')
+            {
+                if (startIndex == -1)
+                {
+                    startIndex = i;
+                }
+                braceCount++;
+            }
+            else if (data[i] == '}')
+            {
+                braceCount--;
+                if (braceCount == 0 && startIndex != -1)
+                {
+                    // 找到了一个完整的 JSON 对象
+                    try
+                    {
+                        var jsonData = data.Substring(startIndex, i - startIndex + 1);
+                        ProcessData(jsonData);
+                        
+                        // 移除已处理的数据
+                        processedLength = i + 1;
+                        break;
+                    }
+                    catch (JsonException)
+                    {
+                        // 如果解析失败，可能是数据还不完整，继续等待更多数据
+                        return;
+                    }
+                }
+            }
+        }
+        
+        // 移除已处理的数据
+        if (processedLength > 0)
+        {
+            dataBuffer.Remove(0, processedLength);
+            // 如果还有剩余数据，递归处理
+            if (dataBuffer.Length > 0)
+            {
+                ProcessBufferedData();
+            }
         }
     }
 
@@ -113,8 +171,85 @@ public class DataSync
             
             if (json == null) return;
             
-            switch ((int)json["ID"]!)
+            // 检查 ID 字段是否存在
+            var idNode = json["ID"];
+            if (idNode == null)
             {
+                File.WriteAllText("./ModifierJsonError.txt", 
+                    $"JSON missing ID field\n" +
+                    $"Data: {data.Substring(0, Math.Min(500, data.Length))}");
+                return;
+            }
+            
+            int id;
+            try
+            {
+                id = (int)idNode;
+            }
+            catch (Exception ex)
+            {
+                File.WriteAllText("./ModifierJsonError.txt", 
+                    $"JSON ID field conversion error: {ex.Message}\n" +
+                    $"ID value: {idNode}\n" +
+                    $"Data: {data.Substring(0, Math.Min(500, data.Length))}");
+                return;
+            }
+            
+            switch (id)
+            {
+                case 0:
+                {
+                    // 接收更新后的InitData（包含MOD添加的词条）
+                    try
+                    {
+                        var initData = json.Deserialize(InitDataSGC.Default.InitData);
+                        File.WriteAllText("./ModifierReceivedInitData.txt", 
+                            $"收到InitData: AdvBuffs={initData.AdvBuffs?.Length ?? 0}, " +
+                            $"UltiBuffs={initData.UltiBuffs?.Length ?? 0}, " +
+                            $"Debuffs={initData.Debuffs?.Length ?? 0}\n" +
+                            $"MainWindow.Instance={(MainWindow.Instance != null ? "存在" : "null")}\n" +
+                            $"App.InitData更新前={(App.InitData != null ? "存在" : "null")}");
+                        
+                        if (initData.AdvBuffs != null)
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                App.InitData = initData;
+                                File.WriteAllText("./ModifierInitDataUpdated.txt", 
+                                    $"App.InitData已更新: AdvBuffs={App.InitData?.AdvBuffs?.Length ?? 0}, " +
+                                    $"UltiBuffs={App.InitData?.UltiBuffs?.Length ?? 0}, " +
+                                    $"Debuffs={App.InitData?.Debuffs?.Length ?? 0}\n" +
+                                    $"MainWindow.Instance={(MainWindow.Instance != null ? "存在" : "null")}\n" +
+                                    $"ViewModel={(MainWindow.Instance?.ViewModel != null ? "存在" : "null")}");
+                                
+                                // 重新加载词条列表
+                                if (MainWindow.Instance != null && MainWindow.Instance.ViewModel != null)
+                                {
+                                    MainWindow.Instance.ViewModel.ReloadBuffsFromInitData();
+                                    File.WriteAllText("./ModifierReloadBuffsCalled.txt", 
+                                        $"ReloadBuffsFromInitData已调用\n" +
+                                        $"TravelBuffs.Count={MainWindow.Instance.ViewModel.TravelBuffs?.Count ?? 0}\n" +
+                                        $"InGameBuffs.Count={MainWindow.Instance.ViewModel.InGameBuffs?.Count ?? 0}\n" +
+                                        $"Debuffs.Count={MainWindow.Instance.ViewModel.Debuffs?.Count ?? 0}");
+                                }
+                                else
+                                {
+                                    File.WriteAllText("./ModifierReloadBuffsFailed.txt", 
+                                        $"无法调用ReloadBuffsFromInitData: MainWindow.Instance={MainWindow.Instance != null}, ViewModel={MainWindow.Instance?.ViewModel != null}");
+                                }
+                            });
+                        }
+                        else
+                        {
+                            File.WriteAllText("./ModifierInitDataAdvBuffsNull.txt", "收到的InitData.AdvBuffs为null");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        File.WriteAllText("./ModifierInitDataError.txt", $"InitData更新错误: {ex.Message}\n{ex.StackTrace}\n数据预览: {data.Substring(0, Math.Min(500, data.Length))}");
+                    }
+                    break;
+                }
                 case 3:
                 {
                     var igh = json.Deserialize(InGameHotkeysSGC.Default.InGameHotkeys);
@@ -204,7 +339,13 @@ public class DataSync
             {
                 var bytes = socket.EndReceive(ar);
                 ar.AsyncWaitHandle.Close();
-                ProcessData(Encoding.UTF8.GetString(buffer, 0, bytes));
+                
+                // 累积接收的数据
+                dataBuffer.Append(Encoding.UTF8.GetString(buffer, 0, bytes));
+                
+                // 尝试处理累积的数据
+                ProcessBufferedData();
+                
                 buffer = new byte[1024 * 64];
                 socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, Receive, socket);
             }

@@ -111,7 +111,11 @@ public partial class ModifierViewModel : ObservableObject
         Health2nds = [];
         HealthPlants = [];
         HealthZombies = [];
-        foreach (var kp in App.InitData!.Value.Plants) Plants.Add(kp.Key, kp.Value);
+        
+        // 如果 InitData 还没有加载，先初始化空列表，等待 ReloadBuffsFromInitData 被调用
+        if (App.InitData != null)
+        {
+            foreach (var kp in App.InitData.Value.Plants) Plants.Add(kp.Key, kp.Value);
 
         foreach (var h1 in App.InitData.Value.FirstArmors) Health1sts.Add(h1.Key, -1);
 
@@ -122,6 +126,7 @@ public partial class ModifierViewModel : ObservableObject
         foreach (var h4 in App.InitData.Value.Zombies) HealthZombies.Add(h4.Key, -1);
 
         foreach (var b in Bullets) Bullets2.Add(b.Key, b.Key + " : " + b.Value);
+        }
 
         GameSpeed = 1;
         ZombieSeaCD = 40;
@@ -149,6 +154,9 @@ public partial class ModifierViewModel : ObservableObject
         Times = 1;
         NewZombieUpdateCD = 30;
 
+        // 如果 InitData 还没有加载，先初始化空列表，等待 ReloadBuffsFromInitData 被调用
+        if (App.InitData != null)
+        {
         var bi = 0;
         foreach (var b in App.InitData.Value.AdvBuffs)
         {
@@ -170,6 +178,17 @@ public partial class ModifierViewModel : ObservableObject
             Debuffs.Add(new TravelBuffVM(new TravelBuff(di, d, true, true)));
             InGameDebuffs.Add(new TravelBuffVM(new TravelBuff(di, d, true, true)));
             di++;
+            }
+        }
+
+        // 创建合并列表，包含所有三种buff（用于旗帜波词条选择）
+        AllInGameBuffs = new BindingList<TravelBuffVM>();
+        if (App.InitData != null)
+        {
+            foreach (var buff in InGameBuffs)
+                AllInGameBuffs.Add(buff);
+            foreach (var debuff in InGameDebuffs)
+                AllInGameBuffs.Add(debuff);
         }
 
         TravelBuffs.ListChanged += (sender, e) => SyncTravelBuffs();
@@ -664,7 +683,24 @@ public partial class ModifierViewModel : ObservableObject
     [RelayCommand]
     public void NextWave()
     {
-        App.DataSync.Value.SendData(new InGameActions { NextWave = true });
+        // RelayCommand/按钮回调通常要求 void；这里用 fire-and-forget 的异步脉冲发送。
+        _ = NextWaveAsync();
+    }
+
+    private async Task NextWaveAsync()
+    {
+        // NextWave 必须作为“脉冲”发送（true -> false），否则 UI 侧/传输层可能会去重，导致只能生效一次
+        try
+        {
+            App.DataSync.Value.SendData(new InGameActions { NextWave = true });
+            // 给一小段时间让游戏端 Update 消费到该值
+            await Task.Delay(50);
+            App.DataSync.Value.SendData(new InGameActions { NextWave = false });
+        }
+        catch
+        {
+            // 静默：避免 UI 按钮抛异常影响其他功能
+        }
     }
 
     [RelayCommand]
@@ -944,6 +980,17 @@ public partial class ModifierViewModel : ObservableObject
         DataSync.Enabled = true;
 
         App.DataSync.Value.SendData(new InGameHotkeys { KeyCodes = keys });
+    }
+
+    public void SyncFlagWaveBuffs()
+    {
+        System.Diagnostics.Debug.WriteLine($"[旗帜波词条] SyncFlagWaveBuffs: FlagWaveBuffEnabled={FlagWaveBuffEnabled}, FlagWaveBuffIds=[{string.Join(", ", FlagWaveBuffIds ?? new List<int>())}]");
+        App.DataSync.Value.SendData(new InGameActions
+        {
+            FlagWaveBuffEnabled = FlagWaveBuffEnabled,
+            FlagWaveBuffIds = FlagWaveBuffIds
+        });
+        System.Diagnostics.Debug.WriteLine($"[旗帜波词条] SyncFlagWaveBuffs: 数据已发送");
     }
 
     public void SyncTravelBuffs()
@@ -1774,6 +1821,35 @@ public partial class ModifierViewModel : ObservableObject
     [ObservableProperty] public partial BindingList<TravelBuffVM> InGameBuffs { get; set; }
 
     [ObservableProperty] public partial BindingList<TravelBuffVM> InGameDebuffs { get; set; }
+    
+    /// <summary>
+    /// 所有游戏内词条（包含Advanced、Ultimate和Debuff），用于旗帜波词条选择
+    /// </summary>
+    [ObservableProperty] public partial BindingList<TravelBuffVM> AllInGameBuffs { get; set; }
+    
+    /// <summary>
+    /// 旗帜波词条功能 - 是否启用
+    /// </summary>
+    [ObservableProperty]
+    private bool _flagWaveBuffEnabled = false;
+    partial void OnFlagWaveBuffEnabledChanged(bool value)
+    {
+        SyncFlagWaveBuffs();
+    }
+    
+    /// <summary>
+    /// 旗帜波词条功能 - 要应用的词条ID列表
+    /// </summary>
+    [ObservableProperty]
+    private List<int> _flagWaveBuffIds = new List<int>();
+    partial void OnFlagWaveBuffIdsChanged(List<int> value)
+    {
+        SyncFlagWaveBuffs();
+    }
+    
+    /// <summary>
+    /// 旗帜波词条功能：不再支持自定义文本，游戏内会自动显示“解锁的词条名”
+    /// </summary>
 
     [ObservableProperty] public partial BindingList<InGameHotkeyUIVM> InGameHotkeys { get; set; }
 
@@ -1927,6 +2003,89 @@ public partial class ModifierViewModel : ObservableObject
     [ObservableProperty] public partial int ZombieType { get; set; }
 
     #endregion Properties
+
+    /// <summary>
+    /// 从更新后的InitData重新加载词条列表（包括MOD添加的词条）
+    /// </summary>
+    public void ReloadBuffsFromInitData()
+    {
+        if (App.InitData == null)
+        {
+            System.Diagnostics.Debug.WriteLine("ReloadBuffsFromInitData: App.InitData 为 null");
+            File.WriteAllText("./ModifierReloadBuffsNull.txt", "App.InitData 为 null，无法重新加载词条");
+            return;
+        }
+
+        try
+        {
+            System.Diagnostics.Debug.WriteLine($"ReloadBuffsFromInitData: 开始重新加载 - AdvBuffs={App.InitData.Value.AdvBuffs?.Length ?? 0}, UltiBuffs={App.InitData.Value.UltiBuffs?.Length ?? 0}, Debuffs={App.InitData.Value.Debuffs?.Length ?? 0}");
+            
+            NeedSync = false;
+
+            // 清空现有词条列表
+            TravelBuffs.Clear();
+            InGameBuffs.Clear();
+            Debuffs.Clear();
+            InGameDebuffs.Clear();
+
+            // 重新加载Advanced Buffs
+            var bi = 0;
+            foreach (var b in App.InitData.Value.AdvBuffs)
+            {
+                TravelBuffs.Add(new TravelBuffVM(new TravelBuff(bi, b, false, false)));
+                InGameBuffs.Add(new TravelBuffVM(new TravelBuff(bi, b, true, false)));
+                bi++;
+            }
+
+            // 重新加载Ultimate Buffs
+            foreach (var b in App.InitData.Value.UltiBuffs)
+            {
+                TravelBuffs.Add(new TravelBuffVM(new TravelBuff(bi, b, false, false)));
+                InGameBuffs.Add(new TravelBuffVM(new TravelBuff(bi, b, true, false)));
+                bi++;
+            }
+
+            // 重新加载Debuffs
+            var di = 0;
+            foreach (var d in App.InitData.Value.Debuffs)
+            {
+                Debuffs.Add(new TravelBuffVM(new TravelBuff(di, d, true, true)));
+                InGameDebuffs.Add(new TravelBuffVM(new TravelBuff(di, d, true, true)));
+                di++;
+            }
+
+            // 更新合并列表 - 先清空再添加，确保UI更新
+            if (AllInGameBuffs == null)
+            {
+                AllInGameBuffs = new BindingList<TravelBuffVM>();
+            }
+            else
+            {
+                AllInGameBuffs.Clear();
+            }
+            foreach (var buff in InGameBuffs)
+                AllInGameBuffs.Add(buff);
+            foreach (var debuff in InGameDebuffs)
+                AllInGameBuffs.Add(debuff);
+
+            NeedSync = true;
+            
+            System.Diagnostics.Debug.WriteLine($"ReloadBuffsFromInitData: 完成 - TravelBuffs={TravelBuffs.Count}, InGameBuffs={InGameBuffs.Count}, Debuffs={Debuffs.Count}, AllInGameBuffs={AllInGameBuffs.Count}");
+            File.WriteAllText("./ModifierReloadBuffsComplete.txt", 
+                $"ReloadBuffsFromInitData完成:\n" +
+                $"TravelBuffs.Count={TravelBuffs.Count}\n" +
+                $"InGameBuffs.Count={InGameBuffs.Count}\n" +
+                $"Debuffs.Count={Debuffs.Count}\n" +
+                $"InGameDebuffs.Count={InGameDebuffs.Count}\n" +
+                $"AllInGameBuffs.Count={AllInGameBuffs.Count}");
+        }
+        catch (Exception ex)
+        {
+            // 记录错误但不中断程序
+            System.Diagnostics.Debug.WriteLine($"ReloadBuffsFromInitData 错误: {ex.Message}\n{ex.StackTrace}");
+            File.WriteAllText("./ModifierReloadBuffsError.txt", $"ReloadBuffsFromInitData 错误: {ex.Message}\n{ex.StackTrace}");
+        }
+    }
 }
 
 public partial class TravelBuff : ObservableObject, INotifyPropertyChanged
@@ -1937,10 +2096,53 @@ public partial class TravelBuff : ObservableObject, INotifyPropertyChanged
         Index = index;
         InGame = inGame;
         Debuff = debuff;
+        // 从文本中解析原始ID（如果格式是 "#48 词条名"）
+        OriginalId = ParseOriginalIdFromText(text, index);
     }
 
     public TravelBuff()
     {
+    }
+
+    /// <summary>
+    /// 从词条文本中解析原始ID（游戏中的字典键）
+    /// 格式： "#48 词条名" -> 48
+    /// 如果没有 # 前缀，则使用 index 作为原始ID（向后兼容旧数据）
+    /// </summary>
+    private static int ParseOriginalIdFromText(string text, int index)
+    {
+        if (string.IsNullOrEmpty(text))
+            return index;
+        
+        // 如果文本以 # 开头，尝试解析ID
+        if (text.StartsWith("#"))
+        {
+            // 提取 # 后面的数字（直到遇到空格或字符串结束）
+            int spaceIndex = text.IndexOf(' ');
+            if (spaceIndex > 1)
+            {
+                string idStr = text.Substring(1, spaceIndex - 1);
+                if (int.TryParse(idStr, out int originalId))
+                {
+                    System.Diagnostics.Debug.WriteLine($"ParseOriginalIdFromText: 从文本 '{text}' 解析出 OriginalId={originalId} (index={index})");
+                    return originalId;
+                }
+            }
+            else if (text.Length > 1)
+            {
+                // 如果没有空格，尝试解析整个 # 后面的部分
+                string idStr = text.Substring(1);
+                if (int.TryParse(idStr, out int originalId))
+                {
+                    System.Diagnostics.Debug.WriteLine($"ParseOriginalIdFromText: 从文本 '{text}' 解析出 OriginalId={originalId} (index={index})");
+                    return originalId;
+                }
+            }
+        }
+        
+        // 如果没有 # 前缀或解析失败，使用 index 作为原始ID（向后兼容）
+        System.Diagnostics.Debug.WriteLine($"ParseOriginalIdFromText: 文本 '{text}' 没有 # 前缀，使用 index={index} 作为 OriginalId");
+        return index;
     }
 
     public bool Debuff { get; set; }
@@ -1948,6 +2150,12 @@ public partial class TravelBuff : ObservableObject, INotifyPropertyChanged
     [ObservableProperty] public partial bool Enabled { get; set; }
 
     public int Index { get; set; }
+    
+    /// <summary>
+    /// 游戏中的原始ID（字典键），用于旗帜波词条功能
+    /// </summary>
+    public int OriginalId { get; set; }
+    
     public bool InGame { get; set; }
 
     [JsonIgnore] public string Text { get; set; } = "";

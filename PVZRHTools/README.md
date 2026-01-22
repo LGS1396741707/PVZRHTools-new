@@ -8,14 +8,14 @@
 
 1. 适配3.1.1
 2. 摆烂
-3. 适配3.3.0
+3. 适配3.3.1
 
 ### 往前的更新日志请去“修改器更新日志.txt”查看
 
 # PVZRHTools
 
 植物大战僵尸融合版修改器 by [@Infinite75](https://space.bilibili.com/672619350) [@听雨夜荷](https://space.bilibili.com/3537110030092294) [@梧萱梦汐X](https://space.bilibili.com/3493111820978227)
-适配游戏版本3.3.0
+适配游戏版本3.3.1
 已构建版本的链接位于 https://pan.quark.cn/s/958659c83f52
 
 模组部分基于[BepInEx](https://github.com/BepInEx/BepInEx)开发  
