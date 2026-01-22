@@ -277,6 +277,7 @@ public partial class ModifierViewModel : ObservableObject
         FreeCD = s.FreeCD;
         FreePlanting = s.FreePlanting;
         GameSpeed = s.GameSpeed;
+        GameSpeedEnabled = s.GameSpeedEnabled;
         GarlicDay = s.GarlicDay;
         GloveNoCD = s.GloveNoCD;
         HammerNoCD = s.HammerNoCD;
@@ -743,6 +744,7 @@ public partial class ModifierViewModel : ObservableObject
             FreeCD = FreeCD,
             FreePlanting = FreePlanting,
             GameSpeed = GameSpeed,
+            GameSpeedEnabled = GameSpeedEnabled,
             GarlicDay = GarlicDay,
             GloveNoCD = GloveNoCD,
             HammerNoCD = HammerNoCD,
@@ -903,6 +905,7 @@ public partial class ModifierViewModel : ObservableObject
                 FastShooting = FastShooting,
                 FreePlanting = FreePlanting,
                 GameSpeed = (int)GameSpeed,
+                GameSpeedEnabled = GameSpeedEnabled,
                 GarlicDay = GarlicDay,
                 GloveNoCD = GloveNoCD,
                 HammerNoCD = HammerNoCD,
@@ -1209,6 +1212,11 @@ public partial class ModifierViewModel : ObservableObject
     partial void OnGameSpeedChanged(double value)
     {
         App.DataSync.Value.SendData(new BasicProperties { GameSpeed = value });
+    }
+
+    partial void OnGameSpeedEnabledChanged(bool value)
+    {
+        App.DataSync.Value.SendData(new BasicProperties { GameSpeedEnabled = value });
     }
 
     partial void OnGarlicDayChanged(bool value)
@@ -1703,11 +1711,39 @@ public partial class ModifierViewModel : ObservableObject
         })
     ];
 
-    public Dictionary<int, string> Plants2 => App.InitData!.Value.Plants;
+    public Dictionary<int, string> Plants2
+    {
+        get
+        {
+            var result = new Dictionary<int, string>();
+            if (App.InitData != null)
+            {
+                foreach (var plant in App.InitData.Value.Plants)
+                {
+                    result.Add(plant.Key, $"{plant.Key} : {plant.Value}");
+                }
+            }
+            return result;
+        }
+    }
 
     public Dictionary<int, string> SecondArmor => App.InitData!.Value.SecondArmors;
 
-    public Dictionary<int, string> Zombies => App.InitData!.Value.Zombies;
+    public Dictionary<int, string> Zombies
+    {
+        get
+        {
+            var result = new Dictionary<int, string>();
+            if (App.InitData != null)
+            {
+                foreach (var zombie in App.InitData.Value.Zombies)
+                {
+                    result.Add(zombie.Key, $"{zombie.Key} : {zombie.Value}");
+                }
+            }
+            return result;
+        }
+    }
 
     #endregion ItemSources
 
@@ -1771,6 +1807,8 @@ public partial class ModifierViewModel : ObservableObject
     [ObservableProperty] public partial bool FreePlanting { get; set; }
 
     [ObservableProperty] public partial double GameSpeed { get; set; }
+
+    [ObservableProperty] public partial bool GameSpeedEnabled { get; set; } = true;
 
     [ObservableProperty] public partial bool GarlicDay { get; set; }
 
@@ -2069,6 +2107,74 @@ public partial class ModifierViewModel : ObservableObject
                 AllInGameBuffs.Add(debuff);
 
             NeedSync = true;
+            
+            // 更新 Plants 字典（静态属性）
+            if (Plants == null)
+            {
+                Plants = new Dictionary<int, string> { { -1, "-1 : 不修改" } };
+            }
+            else
+            {
+                Plants.Clear();
+                Plants.Add(-1, "-1 : 不修改");
+            }
+            if (App.InitData != null)
+            {
+                foreach (var kp in App.InitData.Value.Plants)
+                {
+                    Plants.Add(kp.Key, kp.Value);
+                }
+            }
+            
+            // 更新 Bullets2（包含ID格式）
+            if (Bullets2 == null)
+            {
+                Bullets2 = new Dictionary<int, string>
+                {
+                    { -2, "-2 : 不修改" },
+                    { -1, "-1 : 随机子弹" }
+                };
+            }
+            else
+            {
+                Bullets2.Clear();
+                Bullets2.Add(-2, "-2 : 不修改");
+                Bullets2.Add(-1, "-1 : 随机子弹");
+            }
+            if (App.InitData != null)
+            {
+                foreach (var b in App.InitData.Value.Bullets)
+                {
+                    Bullets2.Add(b.Key, $"{b.Key} : {b.Value}");
+                }
+            }
+            
+            // 更新 Health1sts, Health2nds, HealthPlants, HealthZombies
+            if (App.InitData != null)
+            {
+                Health1sts.Clear();
+                Health2nds.Clear();
+                HealthPlants.Clear();
+                HealthZombies.Clear();
+                foreach (var h1 in App.InitData.Value.FirstArmors) Health1sts.Add(h1.Key, -1);
+                foreach (var h2 in App.InitData.Value.SecondArmors) Health2nds.Add(h2.Key, -1);
+                foreach (var h3 in App.InitData.Value.Plants) HealthPlants.Add(h3.Key, -1);
+                foreach (var h4 in App.InitData.Value.Zombies) HealthZombies.Add(h4.Key, -1);
+            }
+            
+            // 通知所有依赖 InitData 的属性已更改，强制UI刷新ComboBox等控件
+            OnPropertyChanged(nameof(Plants2));
+            OnPropertyChanged(nameof(Zombies));
+            OnPropertyChanged(nameof(Plants));
+            OnPropertyChanged(nameof(Bullets));
+            OnPropertyChanged(nameof(Bullets2));
+            OnPropertyChanged(nameof(FirstArmor));
+            OnPropertyChanged(nameof(SecondArmor));
+            OnPropertyChanged(nameof(Items));
+            OnPropertyChanged(nameof(Health1sts));
+            OnPropertyChanged(nameof(Health2nds));
+            OnPropertyChanged(nameof(HealthPlants));
+            OnPropertyChanged(nameof(HealthZombies));
             
             System.Diagnostics.Debug.WriteLine($"ReloadBuffsFromInitData: 完成 - TravelBuffs={TravelBuffs.Count}, InGameBuffs={InGameBuffs.Count}, Debuffs={Debuffs.Count}, AllInGameBuffs={AllInGameBuffs.Count}");
             File.WriteAllText("./ModifierReloadBuffsComplete.txt", 

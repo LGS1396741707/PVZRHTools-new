@@ -1872,7 +1872,22 @@ public static class InGameBtnPatch
         {
             TimeSlow = !TimeSlow;
             TimeStop = false;
-            Time.timeScale = TimeSlow ? 0.2f : SyncSpeed;
+            if (TimeSlow)
+            {
+                Time.timeScale = 0.2f;
+            }
+            else
+            {
+                // 恢复速度时，如果功能开启且修改器主动设置了速度，使用修改器速度，否则使用游戏内部速度
+                if (GameSpeedEnabled && SyncSpeed >= 0 && IsSpeedModifiedByTool)
+                {
+                    Time.timeScale = SyncSpeed;
+                }
+                else
+                {
+                    Time.timeScale = GameAPP.gameSpeed;
+                }
+            }
         }
 
         if (__instance.buttonNumber == 13) BottomEnabled = GameObject.Find("Bottom") is not null;
@@ -4481,6 +4496,9 @@ public class PatchMgr : MonoBehaviour
     public static bool StopSummon { get; set; } = false;
     public static bool SuperPresent { get; set; } = false;
     public static float SyncSpeed { get; set; } = -1;
+    private static float _lastGameSpeed = -1; // 记录上次游戏内部速度，用于检测变化
+    public static bool IsSpeedModifiedByTool { get; set; } = false; // 标记修改器是否主动设置了速度
+    public static bool GameSpeedEnabled { get; set; } = true; // 游戏速度功能开关，默认开启
     public static bool TimeSlow { get; set; }
     public static bool TimeStop { get; set; }
     public static bool[] UltiBuffs { get; set; } = [];
@@ -4614,10 +4632,52 @@ public class PatchMgr : MonoBehaviour
             }
 
             if (Input.GetKeyDown(Core.KeyShowGameInfo.Value.Value)) ShowGameInfo = !ShowGameInfo;
-            if (!TimeStop && !TimeSlow) Time.timeScale = SyncSpeed;
-
-            if (!TimeStop && TimeSlow) Time.timeScale = 0.2f;
-            if (InGameBtnPatch.BottomEnabled || (TimeStop && !TimeSlow)) Time.timeScale = 0;
+            
+            // 检测游戏内部速度变化（GameAPP.gameSpeed）
+            // 只有在功能关闭时才检测，避免干扰游戏内部速度调整
+            if (!GameSpeedEnabled)
+            {
+                try
+                {
+                    float currentGameSpeed = GameAPP.gameSpeed;
+                    if (_lastGameSpeed >= 0 && Mathf.Abs(currentGameSpeed - _lastGameSpeed) > 0.01f)
+                    {
+                        // 游戏内部速度改变了，且功能关闭，让游戏内部的速度生效
+                        SyncSpeed = -1; // 重置为未设置状态
+                        IsSpeedModifiedByTool = false; // 清除修改标记
+                    }
+                    _lastGameSpeed = currentGameSpeed;
+                }
+                catch { }
+            }
+            else
+            {
+                // 功能开启时，更新记录的游戏内部速度，但不自动应用
+                try
+                {
+                    _lastGameSpeed = GameAPP.gameSpeed;
+                }
+                catch { }
+            }
+            
+            // 应用速度设置：只有在功能开启、修改器主动设置速度（SyncSpeed >= 0）或时停/慢速时才覆盖
+            if (!TimeStop && !TimeSlow)
+            {
+                if (GameSpeedEnabled && SyncSpeed >= 0 && IsSpeedModifiedByTool)
+                {
+                    // 功能开启且修改器主动设置了速度，应用修改器的速度
+                    Time.timeScale = SyncSpeed;
+                }
+                // 否则让游戏内部的速度调整功能正常工作（不覆盖 Time.timeScale）
+            }
+            else if (!TimeStop && TimeSlow)
+            {
+                Time.timeScale = 0.2f;
+            }
+            else if (InGameBtnPatch.BottomEnabled || (TimeStop && !TimeSlow))
+            {
+                Time.timeScale = 0;
+            }
 
             // SlowTrigger UI更新 - 独立try块，不影响其他功能
             try

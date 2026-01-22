@@ -454,7 +454,8 @@ namespace ToolModBepInEx
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly());
             Instance = new Lazy<Core>(this);
             if (Time.timeScale == 0) Time.timeScale = 1;
-            SyncSpeed = Time.timeScale;
+            // 初始化时不设置 SyncSpeed，让游戏内部的速度调整功能正常工作
+            // SyncSpeed = Time.timeScale; // 注释掉，避免干扰游戏内部速度调整
             Port = new Lazy<ConfigEntry<int>>(Config.Bind("PVZRHTools", "Port", 13531, "修改窗口无法出现时可尝试修改此数值，范围10000~60000"));
             AlmanacZombieMindCtrl =
                 new Lazy<ConfigEntry<bool>>(Config.Bind("PVZRHTools", nameof(AlmanacZombieMindCtrl), false));

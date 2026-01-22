@@ -771,5 +771,134 @@ namespace PVZRHTools
         {
 
         }
+
+        private void LockPresent_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is ModifierViewModel vm && sender is ComboBox comboBox)
+            {
+                // 如果 SelectedValue 无效，尝试从 ComboBox 的文本中解析 ID
+                if (comboBox.SelectedValue == null && !string.IsNullOrWhiteSpace(comboBox.Text))
+                {
+                    string text = comboBox.Text.Trim();
+                    // 尝试解析为纯数字ID
+                    if (int.TryParse(text, out int plantId) && vm.Plants2.ContainsKey(plantId))
+                    {
+                        vm.LockPresent = plantId;
+                    }
+                    // 或者尝试从"ID : 名称"格式中提取ID
+                    else if (text.Contains(" : "))
+                    {
+                        string idPart = text.Split(new[] { " : " }, StringSplitOptions.None)[0];
+                        if (int.TryParse(idPart, out int parsedId) && vm.Plants2.ContainsKey(parsedId))
+                        {
+                            vm.LockPresent = parsedId;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void LockPresent1_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ParseLockPresentComboBox(sender, (vm, id) => vm.LockPresent1 = id);
+        }
+
+        private void LockPresent2_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ParseLockPresentComboBox(sender, (vm, id) => vm.LockPresent2 = id);
+        }
+
+        private void LockPresent3_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ParseLockPresentComboBox(sender, (vm, id) => vm.LockPresent3 = id);
+        }
+
+        private void LockPresent4_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ParseLockPresentComboBox(sender, (vm, id) => vm.LockPresent4 = id);
+        }
+
+        private void LockPresent5_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ParseLockPresentComboBox(sender, (vm, id) => vm.LockPresent5 = id);
+        }
+
+        private void ParseLockPresentComboBox(object sender, Action<ModifierViewModel, int> setValue)
+        {
+            if (DataContext is ModifierViewModel vm && sender is ComboBox comboBox)
+            {
+                // 如果 SelectedValue 无效，尝试从 ComboBox 的文本中解析 ID
+                if (comboBox.SelectedValue == null && !string.IsNullOrWhiteSpace(comboBox.Text))
+                {
+                    string text = comboBox.Text.Trim();
+                    // 尝试解析为纯数字ID
+                    if (int.TryParse(text, out int plantId) && vm.Plants2.ContainsKey(plantId))
+                    {
+                        setValue(vm, plantId);
+                    }
+                    // 或者尝试从"ID : 名称"格式中提取ID
+                    else if (text.Contains(" : "))
+                    {
+                        string idPart = text.Split(new[] { " : " }, StringSplitOptions.None)[0];
+                        if (int.TryParse(idPart, out int parsedId) && vm.Plants2.ContainsKey(parsedId))
+                        {
+                            setValue(vm, parsedId);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void CreatePlant_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is ModifierViewModel vm)
+            {
+                // 如果PlantType无效，尝试从ComboBox的文本中解析ID
+                if (!vm.Plants2.ContainsKey(vm.PlantType) && PlantType != null)
+                {
+                    string text = PlantType.Text?.Trim() ?? "";
+                    // 尝试解析为纯数字ID
+                    if (int.TryParse(text, out int plantId) && vm.Plants2.ContainsKey(plantId))
+                    {
+                        vm.PlantType = plantId;
+                    }
+                    // 或者尝试从"ID : 名称"格式中提取ID
+                    else if (text.Contains(" : "))
+                    {
+                        string idPart = text.Split(new[] { " : " }, StringSplitOptions.None)[0];
+                        if (int.TryParse(idPart, out int parsedId) && vm.Plants2.ContainsKey(parsedId))
+                        {
+                            vm.PlantType = parsedId;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void CreateZombie_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is ModifierViewModel vm)
+            {
+                // 如果ZombieType无效，尝试从ComboBox的文本中解析ID
+                if (!vm.Zombies.ContainsKey(vm.ZombieType) && ZombieType != null)
+                {
+                    string text = ZombieType.Text?.Trim() ?? "";
+                    // 尝试解析为纯数字ID
+                    if (int.TryParse(text, out int zombieId) && vm.Zombies.ContainsKey(zombieId))
+                    {
+                        vm.ZombieType = zombieId;
+                    }
+                    // 或者尝试从"ID : 名称"格式中提取ID
+                    else if (text.Contains(" : "))
+                    {
+                        string idPart = text.Split(new[] { " : " }, StringSplitOptions.None)[0];
+                        if (int.TryParse(idPart, out int parsedId) && vm.Zombies.ContainsKey(parsedId))
+                        {
+                            vm.ZombieType = parsedId;
+                        }
+                    }
+                }
+            }
+        }
     }
 }

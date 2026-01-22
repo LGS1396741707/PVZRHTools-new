@@ -30,6 +30,7 @@ public struct ModifierSaveModel
     public bool FreeCD { get; set; }
     public bool FreePlanting { get; set; }
     public double GameSpeed { get; set; }
+    public bool GameSpeedEnabled { get; set; }
     public bool GarlicDay { get; set; }
     public double GloveFullCD { get; set; }
     public bool GloveFullCDEnabled { get; set; }

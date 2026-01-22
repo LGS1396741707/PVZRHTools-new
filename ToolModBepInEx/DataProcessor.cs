@@ -173,7 +173,31 @@ public class DataProcessor : MonoBehaviour
                 GameAPP.developerMode = (bool)p1.DeveloperMode;
 #endif
             }
-            if (p1.GameSpeed is not null) SyncSpeed = (float)p1.GameSpeed;
+            if (p1.GameSpeedEnabled is not null)
+            {
+                bool oldValue = PatchMgr.GameSpeedEnabled;
+                PatchMgr.GameSpeedEnabled = (bool)p1.GameSpeedEnabled;
+                // 如果功能关闭，清除速度修改标记，让游戏内部速度生效
+                if (!PatchMgr.GameSpeedEnabled)
+                {
+                    PatchMgr.IsSpeedModifiedByTool = false;
+                    // 立即恢复游戏内部速度
+                    try
+                    {
+                        Time.timeScale = GameAPP.gameSpeed;
+                    }
+                    catch { }
+                }
+            }
+            if (p1.GameSpeed is not null)
+            {
+                SyncSpeed = (float)p1.GameSpeed;
+                // 只有在功能开启时才标记为修改器主动设置速度
+                if (PatchMgr.GameSpeedEnabled)
+                {
+                    PatchMgr.IsSpeedModifiedByTool = true; // 标记修改器主动设置了速度
+                }
+            }
             if (p1.GloveNoCD is not null) GloveNoCD = (bool)p1.GloveNoCD;
             if (p1.HammerNoCD is not null) HammerNoCD = (bool)p1.HammerNoCD;
             if (p1.PlantingNoCD is not null && Board.Instance is not null)
@@ -910,10 +934,10 @@ all");
             bool shouldTrigger = false;
             
             if (currentNextWave)
-            {
+                {
                 // 当前帧 NextWave 为 true，检查上一帧是否为 false 或 null（边沿检测）
                 if (_lastNextWaveValue != true)
-                {
+                    {
                     shouldTrigger = true;
                 }
             }
@@ -923,15 +947,15 @@ all");
             
             if (shouldTrigger)
             {
-                try
-                {
+                        try
+                        {
                     if (Board.Instance != null && Board.Instance.theMaxWave > 0)
                     {
                         MLogger?.LogInfo($"[PVZRHTools] 生成下一波僵尸: 当前波数={Board.Instance.theWave}, 最大波数={Board.Instance.theMaxWave}");
                         
                         // 第 0 波时保证进度条可见（与原版表现一致）
                         if (Board.Instance.theWave == 0 && InGameUI.Instance != null && InGameUI.Instance.LevProgress != null)
-                            InGameUI.Instance.LevProgress.SetActive(true);
+                                InGameUI.Instance.LevProgress.SetActive(true);
 
                         // 重置旗帜波检测状态：确保旗帜波变化能被 PatchMgr 的检测捕获
                         PatchMgr.SetHugeWaveState(false);
@@ -944,12 +968,12 @@ all");
                         Board.Instance.NewZombieUpdate();
                         
                         MLogger?.LogInfo($"[PVZRHTools] 生成下一波僵尸完成: 新波数={Board.Instance.theWave}, timeUntilNextWave={Board.Instance.timeUntilNextWave}");
-                    }
+                        }
                     else
                     {
                         MLogger?.LogWarning($"[PVZRHTools] 生成下一波僵尸失败: Board.Instance={Board.Instance != null}, theMaxWave={Board.Instance?.theMaxWave ?? 0}");
+                        }
                     }
-                }
                 catch (System.Exception ex)
                 {
                     MLogger?.LogError($"[PVZRHTools] 生成下一波僵尸异常: {ex.Message}\n{ex.StackTrace}");

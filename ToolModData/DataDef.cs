@@ -24,6 +24,7 @@ public struct BasicProperties : ISyncData
     public bool? FastShooting { get; set; }
     public bool? FreePlanting { get; set; }
     public double? GameSpeed { get; set; }
+    public bool? GameSpeedEnabled { get; set; }
     public bool? GarlicDay { get; set; }
     public double? GloveFullCD { get; set; }
     public bool? GloveNoCD { get; set; }

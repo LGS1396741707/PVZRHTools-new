@@ -154,6 +154,8 @@
                                                       Style="{DynamicResource NumericUpDownExtend}"
                                                       ToolTip="{DynamicResource Tab1.Page1.NextWaveCD.Tootip}"
                                                       Maximum="30" />
+                                    <CheckBox Content="启用游戏速度修改" IsChecked="{Binding GameSpeedEnabled,Mode=TwoWay}"
+                                              VerticalAlignment="Center" Margin="10,0,0,0" />
                                     <hc:NumericUpDown hc:TitleElement.TitlePlacement="Left"
                                                       hc:TitleElement.Title="{DynamicResource Tab1.Page1.GameSpeed}"
                                                       hc:TitleElement.TitleWidth="90" DecimalPlaces="3"
@@ -161,7 +163,8 @@
                                                       VerticalAlignment="Top" Width="167" Height="20"
                                                       Value="{Binding GameSpeed,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
                                                       Increment="0.1" Minimum="0" SelectionOpacity="0.1" Maximum="16"
-                                                      Style="{DynamicResource NumericUpDownExtend}" />
+                                                      Style="{DynamicResource NumericUpDownExtend}"
+                                                      IsEnabled="{Binding GameSpeedEnabled}" />
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal">
                                     <Label Content="{DynamicResource Tab2.Page2.Header}" HorizontalAlignment="Left"
@@ -208,6 +211,7 @@
                                     <Button x:Name="CreatePlant" Content="{DynamicResource Tab2.Page1.CreatePlant}"
                                             HorizontalAlignment="Left" Height="30" VerticalAlignment="Top" Width="68"
                                             Command="{Binding CreatePlantCommand}"
+                                            Click="CreatePlant_Click"
                                             Style="{DynamicResource ButtonGroupItemHorizontalFirst}" />
                                     <ComboBox x:Name="PlantType" SelectedValuePath="Key" DisplayMemberPath="Value"
                                               ItemsSource="{Binding Plants2}" SelectedValue="{Binding PlantType}"
@@ -227,7 +231,8 @@
                                         <Button x:Name="CreateZombie"
                                                 Content="{DynamicResource Tab2.Page1.CreateZombie}"
                                                 HorizontalAlignment="Left" Height="30" VerticalAlignment="Top"
-                                                Width="68" Command="{Binding CreateZombieCommand}" />
+                                                Width="68" Command="{Binding CreateZombieCommand}"
+                                                Click="CreateZombie_Click" />
                                         <ComboBox x:Name="ZombieType" HorizontalAlignment="Left" Height="30"
                                                   VerticalAlignment="Center" Width="150" SelectedValuePath="Key"
                                                   DisplayMemberPath="Value" ItemsSource="{Binding Zombies}"
@@ -469,9 +474,10 @@
                                               hc:TitleElement.TitleWidth="90" x:Name="LockPresent"
                                               HorizontalAlignment="Left" Height="26" Margin="10,36,0,0" Width="217"
                                               SelectedValuePath="Key" DisplayMemberPath="Value"
-                                              ItemsSource="{Binding Plants}" Style="{DynamicResource ComboBoxExtend}"
+                                              ItemsSource="{Binding Plants2}" Style="{DynamicResource ComboBoxExtend}"
                                               VerticalAlignment="Top"
-                                              IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
+                                              IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value"
+                                              LostFocus="LockPresent_LostFocus" />
                                 </Grid>
                             </Expander>
                             <Expander Header="{DynamicResource Tab1.Page3.Header}"
@@ -1259,9 +1265,10 @@
                                                  hc:TitleElement.TitleWidth="90" x:Name="LockPresent1"
                                                  Height="24"
                                                  SelectedValuePath="Key" DisplayMemberPath="Value"
-                                                 ItemsSource="{Binding Plants}"
+                                                 ItemsSource="{Binding Plants2}"
                                                  Style="{DynamicResource ComboBoxExtend}" Margin="0,0,0,10"
-                                                 IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
+                                                 IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value"
+                                                 LostFocus="LockPresent1_LostFocus" />
                             <ComboBox SelectedValue="{Binding LockPresent2}"
                                                  hc:TitleElement.TitlePlacement="Left"
                                                  hc:TitleElement.VerticalAlignment="Top"
@@ -1269,9 +1276,10 @@
                                                  hc:TitleElement.TitleWidth="90" x:Name="LockPresent2"
                                                  Height="24"
                                                  SelectedValuePath="Key" DisplayMemberPath="Value"
-                                                 ItemsSource="{Binding Plants}"
+                                                 ItemsSource="{Binding Plants2}"
                                                  Style="{DynamicResource ComboBoxExtend}" Margin="0,0,0,10"
-                                                 IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
+                                                 IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value"
+                                                 LostFocus="LockPresent2_LostFocus" />
                             <ComboBox SelectedValue="{Binding LockPresent3}"
                                                  hc:TitleElement.TitlePlacement="Left"
                                                  hc:TitleElement.VerticalAlignment="Top"
@@ -1279,9 +1287,10 @@
                                                  hc:TitleElement.TitleWidth="90" x:Name="LockPresent3"
                                                  Height="24"
                                                  SelectedValuePath="Key" DisplayMemberPath="Value"
-                                                 ItemsSource="{Binding Plants}"
+                                                 ItemsSource="{Binding Plants2}"
                                                  Style="{DynamicResource ComboBoxExtend}" Margin="0,0,0,10"
-                                                 IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
+                                                 IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value"
+                                                 LostFocus="LockPresent3_LostFocus" />
                             <ComboBox SelectedValue="{Binding LockPresent4}"
                                                  hc:TitleElement.TitlePlacement="Left"
                                                  hc:TitleElement.VerticalAlignment="Top"
@@ -1289,9 +1298,10 @@
                                                  hc:TitleElement.TitleWidth="90" x:Name="LockPresent4"
                                                  Height="24"
                                                  SelectedValuePath="Key" DisplayMemberPath="Value"
-                                                 ItemsSource="{Binding Plants}"
+                                                 ItemsSource="{Binding Plants2}"
                                                  Style="{DynamicResource ComboBoxExtend}" Margin="0,0,0,10"
-                                                 IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
+                                                 IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value"
+                                                 LostFocus="LockPresent4_LostFocus" />
                             <ComboBox SelectedValue="{Binding LockPresent5}"
                                                  hc:TitleElement.TitlePlacement="Left"
                                                  hc:TitleElement.VerticalAlignment="Top"
@@ -1299,9 +1309,10 @@
                                                  hc:TitleElement.TitleWidth="90" x:Name="LockPresent5"
                                                  Height="24"
                                                  SelectedValuePath="Key" DisplayMemberPath="Value"
-                                                 ItemsSource="{Binding Plants}"
+                                                 ItemsSource="{Binding Plants2}"
                                                  Style="{DynamicResource ComboBoxExtend}" Margin="0,0,0,10"
-                                                 IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value" />
+                                                 IsEditable="True" IsTextSearchEnabled="True" TextSearch.TextPath="Value"
+                                                 LostFocus="LockPresent5_LostFocus" />
 
                             <Button x:Name="PvE" Content="一键放置五植物+一钻盲僵+四黄金盲僵尸+一巨盲盒僵（Ctrl+A）"
                                             HorizontalAlignment="Left" Height="30" Width="383"
