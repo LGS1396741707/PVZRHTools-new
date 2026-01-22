@@ -249,9 +249,22 @@ public static class BoardFlagWaveBuffPatch
                         }
                         else
                         {
-                            // Tab10没有自定义字幕，不显示任何字幕
-                            displayText = "";
-                            MLogger?.LogInfo($"[PVZRHTools] Tab10未设置自定义字幕，不显示字幕");
+                            // Tab10没有自定义字幕，显示词条名字和描述（格式：词条名字：（词条功能描述））
+                            var buffNames = new List<string>();
+                            foreach (var encodedBuffId in currentWaveBuffs)
+                            {
+                                string? buffName = GetBuffNameWithDescriptionFromEncodedId(encodedBuffId, travelMgr);
+                                if (!string.IsNullOrEmpty(buffName))
+                                {
+                                    buffNames.Add(buffName);
+                                }
+                            }
+                            
+                            if (buffNames.Count > 0)
+                            {
+                                displayText = string.Join("、", buffNames);
+                                MLogger?.LogInfo($"[PVZRHTools] Tab10未设置自定义字幕，显示词条名字和描述: {displayText}");
+                            }
                         }
                     }
                     else
