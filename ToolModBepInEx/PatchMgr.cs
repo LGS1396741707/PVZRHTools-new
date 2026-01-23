@@ -4997,17 +4997,17 @@ public class PatchMgr : MonoBehaviour
         {
             // 只有在游戏速度功能开启时才允许时停/慢速操作
             if (GameSpeedEnabled)
+        {
+            if (Input.GetKeyDown(Core.KeyTimeStop.Value.Value))
             {
-                if (Input.GetKeyDown(Core.KeyTimeStop.Value.Value))
-                {
-                    TimeStop = !TimeStop;
-                    TimeSlow = false;
-                }
+                TimeStop = !TimeStop;
+                TimeSlow = false;
+            }
 
-                if (Input.GetKeyDown(KeyCode.Alpha3))
-                {
-                    TimeStop = false;
-                    TimeSlow = !TimeSlow;
+            if (Input.GetKeyDown(KeyCode.Alpha3))
+            {
+                TimeStop = false;
+                TimeSlow = !TimeSlow;
                 }
             }
             else
@@ -5600,8 +5600,8 @@ public class PatchMgr : MonoBehaviour
                         var boardTag = board.boardTag;
                         if (boardTag.isTravel)
                         {
-                            boardTag.enableTravelBuff = true;
-                            Board.Instance.boardTag = boardTag;
+                        boardTag.enableTravelBuff = true;
+                        Board.Instance.boardTag = boardTag;
                         }
                     }
                 }

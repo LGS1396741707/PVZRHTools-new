@@ -1,4 +1,4 @@
-﻿namespace ToolModData;
+namespace ToolModData;
 
 public interface ISyncData
 {
