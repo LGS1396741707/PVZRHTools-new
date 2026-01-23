@@ -926,12 +926,6 @@ all");
                         if (Board.Instance.theWave == 0 && InGameUI.Instance != null && InGameUI.Instance.LevProgress != null)
                                 InGameUI.Instance.LevProgress.SetActive(true);
 
-                        // 重置旗帜波检测状态：确保旗帜波变化能被 PatchMgr 的检测捕获
-                        PatchMgr.SetHugeWaveState(false);
-                        Board.Instance.isHugeWave = false;
-                        // 让巨浪倒计时从 0 起步（原版会在 5 秒后归零并放波）
-                        Board.Instance.hugeWaveCountDown = 0f;
-
                         // 触发下一波：必须设置成负数，确保进入 `timeUntilNextWave < 0` 分支
                         Board.Instance.timeUntilNextWave = -0.01f;
                         Board.Instance.NewZombieUpdate();

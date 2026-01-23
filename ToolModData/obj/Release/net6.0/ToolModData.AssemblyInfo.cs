@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ToolModData")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1ba41caa6ccfbc8317143a0fd6b97847de9f1e39")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5f11b93b9de80f06b1e0951e9d63331764ca59ee")]
 [assembly: System.Reflection.AssemblyProductAttribute("ToolModData")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ToolModData")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

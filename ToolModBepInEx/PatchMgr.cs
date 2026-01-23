@@ -289,8 +289,9 @@ public static class BoardFlagWaveBuffPatch
                     
                     if (!string.IsNullOrEmpty(displayText))
                     {
-                        InGameText.Instance.ShowText(displayText, 5);
-                        MLogger?.LogInfo($"[PVZRHTools] 显示旗帜波文本: {displayText}");
+                        // 已禁用旗帜波红字显示，避免在"下一波僵尸"功能持续点击时出现大量红字
+                        // InGameText.Instance.ShowText(displayText, 5);
+                        MLogger?.LogInfo($"[PVZRHTools] 旗帜波文本（已禁用显示）: {displayText}");
                     }
                 }
             }
@@ -2229,6 +2230,12 @@ public static class InGameBtnPatch
     {
         if (__instance.buttonNumber == 3)
         {
+            // 只有在游戏速度功能开启时才允许时停/慢速操作
+            if (!GameSpeedEnabled)
+            {
+                return; // 功能关闭时，不处理时停/慢速，让游戏内部速度调整功能正常工作
+            }
+            
             TimeSlow = !TimeSlow;
             TimeStop = false;
             if (TimeSlow)
@@ -4988,16 +4995,29 @@ public class PatchMgr : MonoBehaviour
         }
         if (GameAPP.theGameStatus is GameStatus.InGame or GameStatus.InInterlude or GameStatus.Selecting)
         {
-            if (Input.GetKeyDown(Core.KeyTimeStop.Value.Value))
+            // 只有在游戏速度功能开启时才允许时停/慢速操作
+            if (GameSpeedEnabled)
             {
-                TimeStop = !TimeStop;
-                TimeSlow = false;
-            }
+                if (Input.GetKeyDown(Core.KeyTimeStop.Value.Value))
+                {
+                    TimeStop = !TimeStop;
+                    TimeSlow = false;
+                }
 
-            if (Input.GetKeyDown(KeyCode.Alpha3))
+                if (Input.GetKeyDown(KeyCode.Alpha3))
+                {
+                    TimeStop = false;
+                    TimeSlow = !TimeSlow;
+                }
+            }
+            else
             {
-                TimeStop = false;
-                TimeSlow = !TimeSlow;
+                // 功能关闭时，清除时停/慢速状态，让游戏内部速度调整功能正常工作
+                if (TimeStop || TimeSlow)
+                {
+                    TimeStop = false;
+                    TimeSlow = false;
+                }
             }
 
             if (Input.GetKeyDown(Core.KeyShowGameInfo.Value.Value)) ShowGameInfo = !ShowGameInfo;
@@ -5029,24 +5049,29 @@ public class PatchMgr : MonoBehaviour
                 catch { }
             }
             
-            // 应用速度设置：只有在功能开启、修改器主动设置速度（SyncSpeed >= 0）或时停/慢速时才覆盖
-            if (!TimeStop && !TimeSlow)
+            // 应用速度设置：只有在功能开启时才修改 Time.timeScale
+            if (GameSpeedEnabled)
             {
-                if (GameSpeedEnabled && SyncSpeed >= 0 && IsSpeedModifiedByTool)
+                // 功能开启时，应用速度设置
+                if (!TimeStop && !TimeSlow)
                 {
-                    // 功能开启且修改器主动设置了速度，应用修改器的速度
-                    Time.timeScale = SyncSpeed;
+                    if (SyncSpeed >= 0 && IsSpeedModifiedByTool)
+                    {
+                        // 修改器主动设置了速度，应用修改器的速度
+                        Time.timeScale = SyncSpeed;
+                    }
+                    // 否则让游戏内部的速度调整功能正常工作（不覆盖 Time.timeScale）
                 }
-                // 否则让游戏内部的速度调整功能正常工作（不覆盖 Time.timeScale）
+                else if (!TimeStop && TimeSlow)
+                {
+                    Time.timeScale = 0.2f;
+                }
+                else if (InGameBtnPatch.BottomEnabled || (TimeStop && !TimeSlow))
+                {
+                    Time.timeScale = 0;
+                }
             }
-            else if (!TimeStop && TimeSlow)
-            {
-                Time.timeScale = 0.2f;
-            }
-            else if (InGameBtnPatch.BottomEnabled || (TimeStop && !TimeSlow))
-            {
-                Time.timeScale = 0;
-            }
+            // 功能关闭时，不修改 Time.timeScale，让游戏内部的速度调整功能正常工作
 
             // SlowTrigger UI更新 - 独立try块，不影响其他功能
             try
@@ -5563,7 +5588,8 @@ public class PatchMgr : MonoBehaviour
             }
             
             // 设置 BoardTag 标志，使游戏识别并应用词条效果
-            // 这与 Modified-Plus 的处理方式一致，参考 HeiTa 和 SuperGoldPresent
+            // 注意：这里只在关卡本身就是旅行关（isTravel 为 true）时，才开启 enableTravelBuff，
+            // 避免把所有普通关卡都强行当成旅行关，从而影响小推车等原版关卡行为
             try
             {
                 if (Board.Instance != null && GameAPP.board != null)
@@ -5572,9 +5598,11 @@ public class PatchMgr : MonoBehaviour
                     if (board != null)
                     {
                         var boardTag = board.boardTag;
-                        boardTag.isTravel = true;
-                        boardTag.enableTravelBuff = true;
-                        Board.Instance.boardTag = boardTag;
+                        if (boardTag.isTravel)
+                        {
+                            boardTag.enableTravelBuff = true;
+                            Board.Instance.boardTag = boardTag;
+                        }
                     }
                 }
             }
