@@ -5216,33 +5216,9 @@ public class PatchMgr : MonoBehaviour
                                 // 尝试给植物上星辉buff
                                 try
                                 {
-                                    // 使用反射调用 Plant.StarUp 方法
-                                    var starUpMethod = typeof(Plant).GetMethod("StarUp", 
-                                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | 
-                                        System.Reflection.BindingFlags.Instance);
-                                    
-                                    if (starUpMethod != null)
-                                    {
-                                        starUpMethod.Invoke(plant, null);
-                                        
-                                        // 检查是否成功上星辉
-                                        var starUpField = typeof(Plant).GetField("starUp", 
-                                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | 
-                                            System.Reflection.BindingFlags.Instance);
-                                        
-                                        if (starUpField != null)
-                                        {
-                                            bool starUpValue = (bool)starUpField.GetValue(plant);
-                                            if (starUpValue)
-                                            {
-                                                MLogger?.LogInfo($"[PVZRHTools] 成功给植物 {plant.thePlantType} 上星辉buff");
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        MLogger?.LogWarning("[PVZRHTools] 无法找到 Plant.StarUp 方法");
-                                    }
+                                    // 直接调用 Plant.StarUp 方法
+                                    plant.StarUp();
+                                    MLogger?.LogInfo($"[PVZRHTools] 已尝试给植物 {plant.thePlantType} 上星辉buff");
                                 }
                                 catch (System.Exception ex)
                                 {
