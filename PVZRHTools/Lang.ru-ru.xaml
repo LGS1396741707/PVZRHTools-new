@@ -134,7 +134,7 @@
     <s:String x:Key="Tab1.Page7.RandomBullet">Случайные пули</s:String>
     <s:String x:Key="Tab1.Page7.RandomBullet.Tooltip">При включении растения стреляют случайными типами пуль</s:String>
     <s:String x:Key="Tab1.Page7.StarUpBuff">Звёздный бафф</s:String>
-    <s:String x:Key="Tab1.Page7.StarUpBuff.Tooltip">При включении клик по растению в игре переключает звёздный бафф (если у растения есть эта функция)</s:String>
+    <s:String x:Key="Tab1.Page7.StarUpBuff.Tooltip">При включении клик по растению в игре разблокирует звёздный бафф (если у растения есть эта функция)</s:String>
     <s:String x:Key="Tab1.Page7.RandomUpgradeMode">Режим случайного улучшения</s:String>
     <s:String x:Key="Tab1.Page7.RandomUpgradeMode.Tooltip">ЛКМ по растению для управления (стрелки ↑←↓→), повторный клик - отмена</s:String>
     <s:String x:Key="Tab2.Page1.Header">Создание</s:String>

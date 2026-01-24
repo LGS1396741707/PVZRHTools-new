@@ -162,7 +162,7 @@
     <s:String x:Key="Tab1.Page7.RandomBullet">随机子弹</s:String>
     <s:String x:Key="Tab1.Page7.RandomBullet.Tooltip">启用后植物发射的子弹类型随机</s:String>
     <s:String x:Key="Tab1.Page7.StarUpBuff">星辉buff</s:String>
-    <s:String x:Key="Tab1.Page7.StarUpBuff.Tooltip">启用后在游戏中点击植物会开关星辉buff模式（如果该植物有星辉buff功能）</s:String>
+    <s:String x:Key="Tab1.Page7.StarUpBuff.Tooltip">启用后在游戏中点击植物会解锁星辉buff模式（如果该植物有星辉buff功能）</s:String>
     <s:String x:Key="Tab1.Page7.RandomUpgradeMode">随机升级模式</s:String>
     <s:String x:Key="Tab1.Page7.RandomUpgradeMode.Tooltip">左键点击植物操控(方向键↑←↓→移动)，再次点击停止操控</s:String>
     <s:String x:Key="Tab2.Page1.Header">布阵</s:String>
