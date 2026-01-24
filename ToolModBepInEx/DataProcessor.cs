@@ -295,6 +295,7 @@ public class DataProcessor : MonoBehaviour
             if (p1.ZombieImmuneMindControl is not null) ZombieImmuneMindControl = (bool)p1.ZombieImmuneMindControl;
             if (p1.ZombieImmuneDevour is not null) ZombieImmuneDevour = (bool)p1.ZombieImmuneDevour;
             if (p1.RandomBullet is not null) RandomBullet = (bool)p1.RandomBullet;
+            if (p1.StarUpBuff is not null) StarUpBuff = (bool)p1.StarUpBuff;
             if (p1.RandomUpgradeMode is not null) RandomUpgradeMode = (bool)p1.RandomUpgradeMode;
             return;
         }

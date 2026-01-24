@@ -124,6 +124,11 @@ public struct BasicProperties : ISyncData
     public bool? RandomBullet { get; set; }
 
     /// <summary>
+    /// 星辉buff - 点击植物解锁星辉buff模式（如果该植物有星辉buff功能）
+    /// </summary>
+    public bool? StarUpBuff { get; set; }
+
+    /// <summary>
     /// 随机升级模式 - 点击植物操控，手套点击自己升级，融合重置等级返还阳光
     /// </summary>
     public bool? RandomUpgradeMode { get; set; }

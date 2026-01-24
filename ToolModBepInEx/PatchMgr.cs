@@ -4955,6 +4955,11 @@ public class PatchMgr : MonoBehaviour
     public static bool RandomBullet { get; set; } = false;
 
     /// <summary>
+    /// 星辉buff - 点击植物解锁星辉buff模式（如果该植物有星辉buff功能）
+    /// </summary>
+    public static bool StarUpBuff { get; set; } = false;
+
+    /// <summary>
     /// 随机升级模式 - 点击植物操控(WASD移动)
     /// </summary>
     public static bool RandomUpgradeMode { get; set; } = false;
@@ -5184,6 +5189,66 @@ public class PatchMgr : MonoBehaviour
                         if (Input.GetKeyDown(KeyCode.RightArrow))
                         {
                             Board.Instance.MoveControlPlant(3);
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            // 星辉buff功能 - 点击植物解锁星辉buff模式（如果该植物有星辉buff功能）
+            try
+            {
+                if (StarUpBuff && Board.Instance != null && Mouse.Instance != null)
+                {
+                    // 左键点击植物来应用星辉buff
+                    if (Input.GetMouseButtonDown(0))
+                    {
+                        int column = Mouse.Instance.theMouseColumn;
+                        int row = Mouse.Instance.theMouseRow;
+                        
+                        // 检查点击位置是否有植物
+                        var plants = Lawnf.Get1x1Plants(column, row);
+                        if (plants != null && plants.Count > 0)
+                        {
+                            var plant = plants[0];
+                            if (plant != null && !plant.isCrashed && plant.thePlantHealth > 0)
+                            {
+                                // 尝试给植物上星辉buff
+                                try
+                                {
+                                    // 使用反射调用 Plant.StarUp 方法
+                                    var starUpMethod = typeof(Plant).GetMethod("StarUp", 
+                                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | 
+                                        System.Reflection.BindingFlags.Instance);
+                                    
+                                    if (starUpMethod != null)
+                                    {
+                                        starUpMethod.Invoke(plant, null);
+                                        
+                                        // 检查是否成功上星辉
+                                        var starUpField = typeof(Plant).GetField("starUp", 
+                                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | 
+                                            System.Reflection.BindingFlags.Instance);
+                                        
+                                        if (starUpField != null)
+                                        {
+                                            bool starUpValue = (bool)starUpField.GetValue(plant);
+                                            if (starUpValue)
+                                            {
+                                                MLogger?.LogInfo($"[PVZRHTools] 成功给植物 {plant.thePlantType} 上星辉buff");
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        MLogger?.LogWarning("[PVZRHTools] 无法找到 Plant.StarUp 方法");
+                                    }
+                                }
+                                catch (System.Exception ex)
+                                {
+                                    MLogger?.LogWarning($"[PVZRHTools] 给植物上星辉buff时发生错误: {ex.Message}");
+                                }
+                            }
                         }
                     }
                 }
