@@ -179,7 +179,7 @@ public static class BoardFlagWaveBuffPatch
                 return;
             }
             
-            var travelMgr = ResolveTravelMgr();
+            var travelMgr = ResolveTravelMgr(autoCreate: true);
             if (travelMgr == null)
             {
                 MLogger?.LogWarning("[PVZRHTools] 无法找到 TravelMgr，无法应用旗帜波词条");
@@ -2278,7 +2278,7 @@ public static class InGameTextPatch
         try
         {
             // 使用统一的 TravelMgr 获取方法，防止与 Modified-Plus 冲突
-            var travelMgr = ResolveTravelMgr();
+            var travelMgr = ResolveTravelMgr(autoCreate: true);
             if (travelMgr == null) return;
             
             if (travelMgr.advancedUpgrades != null && InGameAdvBuffs != null)
@@ -5602,7 +5602,7 @@ public class PatchMgr : MonoBehaviour
     {
         MLogger?.LogInfo("[PVZRHTools] PostInitBoard: 开始执行");
         // 使用统一的 TravelMgr 获取方法，防止与 Modified-Plus 冲突
-        var travelMgr = ResolveTravelMgr();
+        var travelMgr = ResolveTravelMgr(autoCreate: true);
         if (travelMgr == null)
         {
             MLogger?.LogWarning("[PVZRHTools] PostInitBoard: 无法找到 TravelMgr 组件");
@@ -5682,7 +5682,15 @@ public class PatchMgr : MonoBehaviour
         InGameDebuffs = new bool[TravelMgr.debuffs.Count];
         
         // 重置旗帜波状态检测
-        _lastHugeWaveState = false;
+        // 注意：同步当前旗帜波状态，避免在 PostInitBoard 创建 TravelMgr 后导致旗帜波检测失效
+        if (Board.Instance != null)
+        {
+            _lastHugeWaveState = Board.Instance.isHugeWave;
+        }
+        else
+        {
+            _lastHugeWaveState = false;
+        }
         _flagWaveUnlockIndex = 0;
         _lastUnlockWave = -1;
         _currentFlagWaveIndex = 0;
@@ -5775,7 +5783,7 @@ public class PatchMgr : MonoBehaviour
         try
         {
             // 使用统一的 TravelMgr 获取方法，防止与 Modified-Plus 冲突
-            var travelMgr = ResolveTravelMgr();
+            var travelMgr = ResolveTravelMgr(autoCreate: true);
             if (travelMgr == null)
             {
                 MLogger?.LogWarning("[PVZRHTools] SyncInGameBuffs: 无法找到 TravelMgr 组件");
@@ -5810,7 +5818,7 @@ public class PatchMgr : MonoBehaviour
         try
         {
             MLogger?.LogInfo("[PVZRHTools] ReloadAndSendBuffsData: 开始执行");
-            var travelMgr = ResolveTravelMgr();
+            var travelMgr = ResolveTravelMgr(autoCreate: true);
             if (travelMgr == null)
             {
                 MLogger?.LogWarning("[PVZRHTools] ReloadAndSendBuffsData: 无法找到 TravelMgr 组件");
@@ -5993,7 +6001,8 @@ public class PatchMgr : MonoBehaviour
     /// 统一获取 TravelMgr（兼容多种场景，防止与 Modified-Plus 冲突）
     /// 参考 HeiTa 和 SuperGoldPresent 的处理方式
     /// </summary>
-    internal static TravelMgr? ResolveTravelMgr()
+    /// <param name="autoCreate">是否在找不到时自动创建 TravelMgr（仅在需要修改词条时使用）</param>
+    internal static TravelMgr? ResolveTravelMgr(bool autoCreate = false)
     {
         TravelMgr? travelMgr = null;
         try { travelMgr = TravelMgr.Instance; } catch { }
@@ -6010,9 +6019,9 @@ public class PatchMgr : MonoBehaviour
             travelMgr = GameAPP.board.GetComponent<TravelMgr>();
         }
         
-        // 关键增强：即使未开启“词条管理器/旅行系统”，也尽量创建 TravelMgr 以支持词条修改生效
+        // 仅在需要修改词条时才自动创建 TravelMgr
         // 参考 Modified-Plus 的做法：GetOrAdd TravelMgr + 设置 boardTag.isTravel/enableTravelBuff
-        if (travelMgr == null && InGame() && GameAPP.gameAPP != null)
+        if (travelMgr == null && autoCreate && InGame() && GameAPP.gameAPP != null)
         {
             try
             {
@@ -6020,7 +6029,15 @@ public class PatchMgr : MonoBehaviour
                 if (travelMgr == null)
                 {
                     travelMgr = GameAPP.gameAPP.AddComponent<TravelMgr>();
-                    MLogger?.LogInfo("[PVZRHTools] ResolveTravelMgr: 已自动创建 TravelMgr（未开启词条管理器也可修改词条）");
+                    MLogger?.LogInfo("[PVZRHTools] ResolveTravelMgr: 已自动创建 TravelMgr（需要修改词条时实时开启）");
+                    
+                    // 关键修复：自动创建 TravelMgr 时，同步旗帜波状态，避免旗帜波检测失效
+                    // 确保 _lastHugeWaveState 与当前游戏状态一致
+                    if (Board.Instance != null)
+                    {
+                        _lastHugeWaveState = Board.Instance.isHugeWave;
+                        MLogger?.LogInfo($"[PVZRHTools] ResolveTravelMgr: 已同步旗帜波状态 _lastHugeWaveState = {_lastHugeWaveState}");
+                    }
                 }
             }
             catch (System.Exception ex)
@@ -6036,7 +6053,7 @@ public class PatchMgr : MonoBehaviour
         try
         {
             // 使用统一的 TravelMgr 获取方法，防止与 Modified-Plus 冲突
-            var travelMgr = ResolveTravelMgr();
+            var travelMgr = ResolveTravelMgr(autoCreate: true);
             if (travelMgr == null)
             {
                 MLogger?.LogWarning("[PVZRHTools] 无法找到 TravelMgr 组件，可能是 Modified-Plus 插件冲突或游戏未初始化");
