@@ -756,17 +756,6 @@ all");
                         var zombie = (Zombie)zombies[i];
                         if (zombie == null || !zombie) continue;
                         
-                        // 对于会生成新僵尸的特殊僵尸，直接销毁而不是调用Die
-                        var zt = zombie.theZombieType;
-                        if (zt == ZombieType.DiamondRandomZombie ||
-                            zt == ZombieType.DollDiamond ||
-                            zt == ZombieType.DollGold ||
-                            zt == ZombieType.DollSilver)
-                        {
-                            Destroy(zombie.gameObject);
-                            continue;
-                        }
-                        
                         zombie.TakeDamage(DmgType.MaxDamage, 2147483647);
                         zombie.BodyTakeDamage(2147483647);
                         zombie.Die();
@@ -782,17 +771,6 @@ all");
                         var zombie = Board.Instance.zombieArray[j];
                         if (zombie == null || !zombie) continue;
                         
-                        // 对于会生成新僵尸的特殊僵尸，直接销毁
-                        var zt = zombie.theZombieType;
-                        if (zt == ZombieType.DiamondRandomZombie ||
-                            zt == ZombieType.DollDiamond ||
-                            zt == ZombieType.DollGold ||
-                            zt == ZombieType.DollSilver)
-                        {
-                            Destroy(zombie.gameObject);
-                            continue;
-                        }
-                        
                         zombie.TakeDamage(DmgType.MaxDamage, 2147483647);
                         zombie.BodyTakeDamage(2147483647);
                         zombie.Die();
@@ -800,8 +778,6 @@ all");
                     catch
                     {
                     }
-
-                Board.Instance.zombieArray.Clear();
             }
 
             if (iga.ClearAllHoles is not null)
