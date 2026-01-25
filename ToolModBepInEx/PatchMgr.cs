@@ -115,12 +115,17 @@ public static class BoardPatchB
 {
     public static void Postfix()
     {
-        // 3.3.1版本中newZombieWaveCountDown字段已被移除，相关功能已禁用
+        // 3.3.1版本：设置waveInterval以限制两波间最大刷怪CD
         try
         {
-            // if (NewZombieUpdateCD > 0 && NewZombieUpdateCD < 30 &&
-            //     Board.Instance != null && Board.Instance.newZombieWaveCountDown > NewZombieUpdateCD)
-            //     Board.Instance.newZombieWaveCountDown = NewZombieUpdateCD;
+            if (NewZombieUpdateCD > 0f && NewZombieUpdateCD <= 30f && Board.Instance != null)
+            {
+                // 确保waveInterval不超过设置的最大值
+                if (Board.Instance.waveInterval > NewZombieUpdateCD)
+                {
+                    Board.Instance.waveInterval = NewZombieUpdateCD;
+                }
+            }
         }
         catch { }
     }
@@ -2901,6 +2906,16 @@ public static class BoardUpdateCursePatch
                     SetAllPlantsCanBeCrashed(false);
                 }
             }
+            
+            // 处理两波间最大刷怪CD - 持续设置waveInterval，防止被游戏重置
+            if (NewZombieUpdateCD > 0f && NewZombieUpdateCD <= 30f && __instance != null)
+            {
+                // 确保waveInterval不超过设置的最大值
+                if (__instance.waveInterval > NewZombieUpdateCD)
+                {
+                    __instance.waveInterval = NewZombieUpdateCD;
+                }
+            }
         }
         catch { }
     }
@@ -5065,7 +5080,11 @@ public class PatchMgr : MonoBehaviour
                         // 修改器主动设置了速度，应用修改器的速度
                         Time.timeScale = SyncSpeed;
                     }
-                    // 否则让游戏内部的速度调整功能正常工作（不覆盖 Time.timeScale）
+                    else
+                    {
+                        // 如果修改器没有设置速度，恢复为游戏内部速度
+                        Time.timeScale = GameAPP.gameSpeed;
+                    }
                 }
                 else if (!TimeStop && TimeSlow)
                 {

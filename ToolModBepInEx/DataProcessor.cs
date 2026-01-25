@@ -252,7 +252,15 @@ public class DataProcessor : MonoBehaviour
             if (p1.DevLour is not null) DevLour = (bool)p1.DevLour;
             if (p1.HammerFullCD is not null) HammerFullCD = (double)p1.HammerFullCD;
             if (p1.GloveFullCD is not null) GloveFullCD = (double)p1.GloveFullCD;
-            if (p1.NewZombieUpdateCD is not null) NewZombieUpdateCD = (float)p1.NewZombieUpdateCD;
+            if (p1.NewZombieUpdateCD is not null)
+            {
+                NewZombieUpdateCD = (float)p1.NewZombieUpdateCD;
+                // 设置Board的waveInterval，限制两波间最大刷怪CD
+                if (InGame() && Board.Instance != null && NewZombieUpdateCD > 0f && NewZombieUpdateCD <= 30f)
+                {
+                    Board.Instance.waveInterval = NewZombieUpdateCD;
+                }
+            }
             if (p1.UltimateSuperGatling is not null) UltimateSuperGatling = (bool)p1.UltimateSuperGatling;
             if (p1.PlantUpgrade is not null) PlantUpgrade = (bool)p1.PlantUpgrade;
             if (p1.PvPPotRange is not null) PvPPotRange = (bool)p1.PvPPotRange;
