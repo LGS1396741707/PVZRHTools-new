@@ -217,14 +217,6 @@ public static class BoardFlagWaveBuffPatch
                 currentWaveBuffs.Add(encodedBuffId);
             }
             
-            // 如果当前旗帜波没有词条（空括号），直接返回
-            if (currentWaveBuffs.Count == 0)
-            {
-                MLogger?.LogInfo($"[PVZRHTools] 当前旗帜波没有词条（空括号），跳过");
-                _currentFlagWaveIndex++; // 仍然增加索引，因为这是一个空的旗帜波
-                return;
-            }
-            
             MLogger?.LogInfo($"[PVZRHTools] 当前旗帜波词条数量: {currentWaveBuffs.Count}, 词条列表: [{string.Join(", ", currentWaveBuffs)}]");
             
             // 遍历当前旗帜波的所有词条，依次应用
@@ -234,6 +226,7 @@ public static class BoardFlagWaveBuffPatch
             }
             
             // 显示文本：如果FlagWaveCustomTexts不为null且有内容，使用自定义字幕；否则显示词条名字
+            // 注意：即使没有词条（空括号），也要显示字幕（如果有自定义字幕的话）
             try
             {
                 if (InGameText.Instance != null)
@@ -252,9 +245,9 @@ public static class BoardFlagWaveBuffPatch
                             displayText = FlagWaveCustomTexts[_currentFlagWaveIndex];
                             MLogger?.LogInfo($"[PVZRHTools] 使用自定义字幕（来自Tab10）: {displayText}");
                         }
-                        else
+                        else if (currentWaveBuffs.Count > 0)
                         {
-                            // Tab10没有自定义字幕，显示词条名字和描述（格式：词条名字：（词条功能描述））
+                            // Tab10没有自定义字幕，但有词条，显示词条名字和描述（格式：词条名字：（词条功能描述））
                             var buffNames = new List<string>();
                             foreach (var encodedBuffId in currentWaveBuffs)
                             {
@@ -294,9 +287,14 @@ public static class BoardFlagWaveBuffPatch
                     
                     if (!string.IsNullOrEmpty(displayText))
                     {
-                        // 已禁用旗帜波红字显示，避免在"下一波僵尸"功能持续点击时出现大量红字
-                        // InGameText.Instance.ShowText(displayText, 5);
-                        MLogger?.LogInfo($"[PVZRHTools] 旗帜波文本（已禁用显示）: {displayText}");
+                        // 显示旗帜波文本
+                        InGameText.Instance.ShowText(displayText, 5);
+                        MLogger?.LogInfo($"[PVZRHTools] 旗帜波文本已显示: {displayText}");
+                    }
+                    else if (currentWaveBuffs.Count == 0)
+                    {
+                        // 如果没有词条也没有自定义字幕，记录日志
+                        MLogger?.LogInfo($"[PVZRHTools] 当前旗帜波没有词条（空括号），且无自定义字幕，跳过显示");
                     }
                 }
             }
@@ -305,8 +303,15 @@ public static class BoardFlagWaveBuffPatch
                 MLogger?.LogWarning($"[PVZRHTools] 显示旗帜波解锁文本失败: {ex.Message}");
             }
             
-            // 增加旗帜波索引
+            // 增加旗帜波索引（无论是否有词条都要增加）
             _currentFlagWaveIndex++;
+            
+            // 如果当前旗帜波没有词条（空括号），在这里返回（但字幕已经处理过了）
+            if (currentWaveBuffs.Count == 0)
+            {
+                MLogger?.LogInfo($"[PVZRHTools] 当前旗帜波没有词条（空括号），处理完成");
+                return;
+            }
             
             MLogger?.LogInfo($"[PVZRHTools] ========== 旗帜波词条处理完成 ==========");
         }
