@@ -29,6 +29,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Interop;
 using PVZRHTools.Animations;
+using ToolModData;
 
 /// <summary>
 ///     Interaction logic for MainWindow.xaml
@@ -1778,6 +1779,283 @@ namespace PVZRHTools
             }
             ItemsResultsListBox.ItemsSource = itemsResults;
             ItemsExpander.IsExpanded = itemsResults.Count > 0;
+        }
+
+        /// <summary>
+        /// 播放特效按钮点击事件
+        /// </summary>
+        private void PlayParticleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not ModifierViewModel vm)
+                return;
+
+            if (string.IsNullOrWhiteSpace(vm.ParticleId))
+            {
+                System.Windows.MessageBox.Show("请输入特效ID", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!int.TryParse(vm.ParticleId, out int particleId))
+            {
+                System.Windows.MessageBox.Show("特效ID必须是数字", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // 发送播放特效请求
+            vm.PlayParticle(particleId);
+        }
+
+        /// <summary>
+        /// 播放音效按钮点击事件
+        /// </summary>
+        private void PlaySoundButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not ModifierViewModel vm)
+                return;
+
+            if (string.IsNullOrWhiteSpace(vm.SoundId))
+            {
+                System.Windows.MessageBox.Show("请输入音效ID", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!int.TryParse(vm.SoundId, out int soundId))
+            {
+                System.Windows.MessageBox.Show("音效ID必须是数字", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // 发送播放音效请求
+            vm.PlaySound(soundId);
+        }
+
+        // 存储出怪列表数据
+        private Dictionary<int, List<int>>? _zombieListByWave;
+        private int _currentWave = 0;
+
+        /// <summary>
+        /// 刷新出怪列表按钮点击事件
+        /// </summary>
+        private void RefreshZombieListButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not ModifierViewModel vm)
+                return;
+
+            // 发送请求获取出怪列表的命令
+            // 发送获取出怪列表的请求（游戏端需要实现GetZombieList的处理）
+            App.DataSync.Value.SendData(new InGameActions { GetZombieList = true });
+            
+            // 更新当前波数显示为"获取中..."
+            if (CurrentWaveLabel != null)
+            {
+                CurrentWaveLabel.Content = "获取中...";
+            }
+        }
+
+        /// <summary>
+        /// 更新出怪列表UI显示
+        /// </summary>
+        private void UpdateZombieListUI()
+        {
+            if (ZombieListContainer == null) return;
+            if (DataContext is not ModifierViewModel vm) return;
+
+            // 清空现有内容
+            ZombieListContainer.Children.Clear();
+
+            // 更新当前波数显示
+            if (CurrentWaveLabel != null)
+            {
+                CurrentWaveLabel.Content = _currentWave > 0 ? $"第 {_currentWave} 波" : "未获取";
+            }
+
+            // 如果没有数据，显示提示
+            if (_zombieListByWave == null || _zombieListByWave.Count == 0)
+            {
+                var noDataLabel = new Label
+                {
+                    Content = "暂无出怪列表数据\n请点击刷新按钮获取",
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(0, 20, 0, 0),
+                    Foreground = new SolidColorBrush(Color.FromRgb(128, 128, 128))
+                };
+                ZombieListContainer.Children.Add(noDataLabel);
+                return;
+            }
+
+            // 遍历所有波次，创建UI
+            foreach (var waveKvp in _zombieListByWave.OrderBy(x => x.Key))
+            {
+                int waveIndex = waveKvp.Key;
+                List<int> zombieTypes = waveKvp.Value;
+                
+                // 跳过空列表
+                if (zombieTypes == null || zombieTypes.Count == 0) continue;
+
+                // 创建波次面板
+                var waveBorder = new Border
+                {
+                    BorderBrush = new SolidColorBrush(Color.FromRgb(135, 206, 235)),
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(4),
+                    Padding = new Thickness(10),
+                    Margin = new Thickness(0, 0, 0, 10),
+                    Background = waveIndex == _currentWave 
+                        ? new SolidColorBrush(Color.FromRgb(240, 255, 240)) 
+                        : new SolidColorBrush(Color.FromRgb(255, 255, 255))
+                };
+
+                var waveStackPanel = new StackPanel { Orientation = Orientation.Vertical };
+
+                // 波次标题
+                string waveTitle = $"第 {waveIndex} 波";
+                if (waveIndex % 10 == 0)
+                {
+                    waveTitle = $"第 {waveIndex / 10} 旗";
+                }
+                if (waveIndex == _currentWave)
+                {
+                    waveTitle += " [当前]";
+                }
+
+                var waveTitleLabel = new Label
+                {
+                    Content = waveTitle,
+                    FontWeight = FontWeights.Bold,
+                    FontSize = 14,
+                    Foreground = waveIndex == _currentWave 
+                        ? new SolidColorBrush(Color.FromRgb(0, 170, 0)) 
+                        : new SolidColorBrush(Color.FromRgb(51, 51, 51)),
+                    Margin = new Thickness(0, 0, 0, 10)
+                };
+                waveStackPanel.Children.Add(waveTitleLabel);
+
+                // 展开/折叠按钮
+                var expander = new Expander
+                {
+                    Header = $"出怪列表 ({zombieTypes.Count} 个)",
+                    IsExpanded = waveIndex == _currentWave, // 当前波次默认展开
+                    Margin = new Thickness(0, 0, 0, 5)
+                };
+
+                var zombieListPanel = new StackPanel { Orientation = Orientation.Vertical };
+
+                // 遍历该波的所有僵尸
+                for (int i = 0; i < zombieTypes.Count; i++)
+                {
+                    int zombieTypeId = zombieTypes[i];
+                    int currentIndex = i; // 捕获索引用于闭包
+
+                    var zombieItemPanel = new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Margin = new Thickness(0, 5, 0, 5)
+                    };
+
+                    // 索引标签
+                    var indexLabel = new Label
+                    {
+                        Content = $"[{i}]",
+                        Width = 40,
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+                    zombieItemPanel.Children.Add(indexLabel);
+
+                    // 僵尸类型下拉框
+                    var zombieComboBox = new ComboBox
+                    {
+                        Width = 300,
+                        Height = 30,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(10, 0, 10, 0)
+                    };
+
+                    // 设置僵尸类型选项
+                    if (vm.Zombies != null)
+                    {
+                        zombieComboBox.ItemsSource = vm.Zombies;
+                        zombieComboBox.DisplayMemberPath = "Value";
+                        zombieComboBox.SelectedValuePath = "Key";
+                        zombieComboBox.SelectedValue = zombieTypeId;
+                    }
+
+                    zombieItemPanel.Children.Add(zombieComboBox);
+
+                    // 应用按钮
+                    var applyButton = new Button
+                    {
+                        Content = "应用",
+                        Width = 80,
+                        Height = 30,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(10, 0, 0, 0)
+                    };
+
+                    // 应用按钮点击事件
+                    applyButton.Click += (s, e) =>
+                    {
+                        if (zombieComboBox.SelectedValue is int selectedZombieType)
+                        {
+                            // 更新出怪列表
+                            if (_zombieListByWave != null && _zombieListByWave.ContainsKey(waveIndex))
+                            {
+                                _zombieListByWave[waveIndex][currentIndex] = selectedZombieType;
+                                
+                                // 发送修改命令到游戏端
+                                // 格式：waveIndex,zombieIndex,zombieType
+                                string modifyCommand = $"{waveIndex},{currentIndex},{selectedZombieType}";
+                                App.DataSync.Value.SendData(new InGameActions { ModifyZombieList = modifyCommand });
+                                
+                                System.Windows.MessageBox.Show(
+                                    $"已修改第 {waveIndex} 波第 {currentIndex} 个出怪为: {vm.Zombies?.GetValueOrDefault(selectedZombieType, "未知")}",
+                                    "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                            }
+                        }
+                    };
+
+                    zombieItemPanel.Children.Add(applyButton);
+
+                    zombieListPanel.Children.Add(zombieItemPanel);
+                }
+
+                expander.Content = zombieListPanel;
+                waveStackPanel.Children.Add(expander);
+
+                waveBorder.Child = waveStackPanel;
+                ZombieListContainer.Children.Add(waveBorder);
+            }
+        }
+
+        /// <summary>
+        /// 设置出怪列表数据（由DataSync调用）
+        /// </summary>
+        public void SetZombieListData(Dictionary<int, List<int>> zombieListByWave, int currentWave)
+        {
+            try
+            {
+                _zombieListByWave = zombieListByWave ?? new Dictionary<int, List<int>>();
+                _currentWave = currentWave;
+                
+                // 更新UI
+                Dispatcher.Invoke(() =>
+                {
+                    try
+                    {
+                        UpdateZombieListUI();
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Windows.MessageBox.Show($"更新出怪列表UI时出错: {ex.Message}", "错误", 
+                            MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"设置出怪列表数据时出错: {ex.Message}", "错误", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

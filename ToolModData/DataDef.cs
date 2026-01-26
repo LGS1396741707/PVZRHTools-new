@@ -253,6 +253,26 @@ public struct InGameActions : ISyncData
     /// 旗帜波自定义字幕列表（10个旗帜波的自定义字幕）
     /// </summary>
     public List<string>? FlagWaveCustomTexts { get; set; }
+    
+    /// <summary>
+    /// 播放特效ID（用于检索分区播放特效）
+    /// </summary>
+    public int? PlayParticleId { get; set; }
+    
+    /// <summary>
+    /// 播放音效ID（用于检索分区播放音效）
+    /// </summary>
+    public int? PlaySoundId { get; set; }
+    
+    /// <summary>
+    /// 请求获取出怪列表
+    /// </summary>
+    public bool? GetZombieList { get; set; }
+    
+    /// <summary>
+    /// 修改出怪列表 - 格式：waveIndex,zombieIndex,zombieType
+    /// </summary>
+    public string? ModifyZombieList { get; set; }
 }
 
 public struct InGameHotkeys : ISyncData
@@ -345,6 +365,26 @@ public struct ZombieInfo
     public int ID { get; set; }
     public int Row { get; set; }
     public float X { get; set; }
+}
+
+/// <summary>
+///     game->modifier
+///     17 - 出怪列表数据
+/// </summary>
+[Serializable]
+public struct ZombieListData : ISyncData
+{
+    public readonly int ID => 17;
+    
+    /// <summary>
+    /// 当前波数
+    /// </summary>
+    public int CurrentWave { get; set; }
+    
+    /// <summary>
+    /// 出怪列表 - Key为波次索引，Value为该波的僵尸类型列表
+    /// </summary>
+    public Dictionary<int, List<int>> ZombieListByWave { get; set; }
 }
 
 public static class Modifier

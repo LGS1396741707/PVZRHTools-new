@@ -2277,7 +2277,7 @@ public static class InGameTextPatch
     {
         try
         {
-            // 使用统一的 TravelMgr 获取方法，防止与 Modified-Plus 冲突
+            // 使用统一的 TravelMgr 获取方法
             var travelMgr = ResolveTravelMgr(autoCreate: true);
             if (travelMgr == null) return;
             
@@ -5601,7 +5601,7 @@ public class PatchMgr : MonoBehaviour
     public static IEnumerator PostInitBoard()
     {
         MLogger?.LogInfo("[PVZRHTools] PostInitBoard: 开始执行");
-        // 使用统一的 TravelMgr 获取方法，防止与 Modified-Plus 冲突
+        // 使用统一的 TravelMgr 获取方法
         var travelMgr = ResolveTravelMgr(autoCreate: true);
         if (travelMgr == null)
         {
@@ -5761,19 +5761,128 @@ public class PatchMgr : MonoBehaviour
     }
 
     //感谢@高数带我飞(Github:https://github.com/LibraHp/)的在出怪表修改上的技术支持
-    public static unsafe void SetZombieList(int index, int wave, ZombieType value)
+    public static void SetZombieList(int zombieIndex, int waveIndex, ZombieType value)
     {
-        var fieldInfo = typeof(InitZombieList).GetField("NativeFieldInfoPtr_zombieList",
-            BindingFlags.NonPublic | BindingFlags.Static);
-
-        if (fieldInfo is not null)
+        try
         {
-            var nativeFieldInfoPtr = (IntPtr)fieldInfo.GetValue(null)!;
-            Unsafe.SkipInit(out IntPtr intPtr);
-            IL2CPP.il2cpp_field_static_get_value(nativeFieldInfoPtr, &intPtr);
-            if (intPtr == IntPtr.Zero) return;
-            var arrayData = (ZombieType*)intPtr.ToPointer();
-            arrayData[index * 101 + wave + 9] = value;
+            // 直接访问 InitZombieList.zombieList，与 Modified-Plus 的实现一致
+            Il2CppSystem.Collections.Generic.List<Il2CppSystem.Collections.Generic.List<ZombieType>>? zombieList = null;
+            
+            try
+            {
+                // 尝试直接访问
+                zombieList = InitZombieList.zombieList;
+            }
+            catch
+            {
+                // 如果直接访问失败，使用反射
+                var zombieListField = typeof(InitZombieList).GetField("zombieList",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                
+                if (zombieListField != null)
+                {
+                    zombieList = zombieListField.GetValue(null) as Il2CppSystem.Collections.Generic.List<Il2CppSystem.Collections.Generic.List<ZombieType>>;
+                }
+            }
+
+            if (zombieList == null)
+            {
+                MLogger?.LogWarning("[PVZRHTools] SetZombieList: InitZombieList.zombieList 为 null");
+                return;
+            }
+
+            // 检查波次索引是否有效
+            if (waveIndex < 0 || waveIndex >= zombieList.Count)
+            {
+                MLogger?.LogWarning($"[PVZRHTools] SetZombieList: 波次索引 {waveIndex} 超出范围 (0-{zombieList.Count - 1})");
+                return;
+            }
+
+            var wave = zombieList[waveIndex];
+            if (wave == null)
+            {
+                MLogger?.LogWarning($"[PVZRHTools] SetZombieList: 第 {waveIndex} 波为 null");
+                return;
+            }
+
+            // 检查僵尸索引是否有效
+            if (zombieIndex < 0 || zombieIndex >= wave.Count)
+            {
+                MLogger?.LogWarning($"[PVZRHTools] SetZombieList: 僵尸索引 {zombieIndex} 超出范围 (0-{wave.Count - 1})");
+                return;
+            }
+
+            // 直接修改列表，与 Modified-Plus 的实现一致
+            wave[zombieIndex] = value;
+            
+            MLogger?.LogInfo($"[PVZRHTools] SetZombieList: 已修改第 {waveIndex} 波第 {zombieIndex} 个出怪为 {value}");
+        }
+        catch (Exception ex)
+        {
+            MLogger?.LogError($"[PVZRHTools] SetZombieList 异常: {ex.Message}\n{ex.StackTrace}");
+        }
+    }
+
+    /// <summary>
+    /// 获取出怪列表数据
+    /// </summary>
+    public static Dictionary<int, List<int>>? GetZombieListData()
+    {
+        try
+        {
+            // 直接访问InitZombieList.zombieList（如果是public属性）
+            // 如果无法直接访问，则使用反射
+            Il2CppSystem.Collections.Generic.List<Il2CppSystem.Collections.Generic.List<ZombieType>>? zombieList = null;
+            
+            try
+            {
+                // 尝试直接访问
+                zombieList = InitZombieList.zombieList;
+            }
+            catch
+            {
+                // 如果直接访问失败，使用反射
+                var zombieListField = typeof(InitZombieList).GetField("zombieList",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                
+                if (zombieListField != null)
+                {
+                    zombieList = zombieListField.GetValue(null) as Il2CppSystem.Collections.Generic.List<Il2CppSystem.Collections.Generic.List<ZombieType>>;
+                }
+            }
+
+            if (zombieList == null)
+            {
+                MLogger?.LogWarning("[PVZRHTools] GetZombieListData: InitZombieList.zombieList 为 null");
+                return null;
+            }
+
+            var result = new Dictionary<int, List<int>>();
+            
+            // 遍历所有波次（从1开始，跳过索引0）
+            for (int waveIndex = 1; waveIndex < zombieList.Count; waveIndex++)
+            {
+                var wave = zombieList[waveIndex];
+                if (wave == null) continue;
+
+                var zombieTypes = new List<int>();
+                for (int i = 0; i < wave.Count; i++)
+                {
+                    zombieTypes.Add((int)wave[i]);
+                }
+
+                if (zombieTypes.Count > 0)
+                {
+                    result[waveIndex] = zombieTypes;
+                }
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            MLogger?.LogError($"[PVZRHTools] GetZombieListData 异常: {ex.Message}\n{ex.StackTrace}");
+            return null;
         }
     }
 
@@ -5782,7 +5891,7 @@ public class PatchMgr : MonoBehaviour
         if (!InGame()) return;
         try
         {
-            // 使用统一的 TravelMgr 获取方法，防止与 Modified-Plus 冲突
+            // 使用统一的 TravelMgr 获取方法
             var travelMgr = ResolveTravelMgr(autoCreate: true);
             if (travelMgr == null)
             {
@@ -5998,7 +6107,7 @@ public class PatchMgr : MonoBehaviour
     }
 
     /// <summary>
-    /// 统一获取 TravelMgr（兼容多种场景，防止与 Modified-Plus 冲突）
+    /// 统一获取 TravelMgr（兼容多种场景）
     /// 参考 HeiTa 和 SuperGoldPresent 的处理方式
     /// </summary>
     /// <param name="autoCreate">是否在找不到时自动创建 TravelMgr（仅在需要修改词条时使用）</param>
@@ -6020,7 +6129,7 @@ public class PatchMgr : MonoBehaviour
         }
         
         // 仅在需要修改词条时才自动创建 TravelMgr
-        // 参考 Modified-Plus 的做法：GetOrAdd TravelMgr + 设置 boardTag.isTravel/enableTravelBuff
+        // GetOrAdd TravelMgr + 设置 boardTag.isTravel/enableTravelBuff
         if (travelMgr == null && autoCreate && InGame() && GameAPP.gameAPP != null)
         {
             try
@@ -6052,11 +6161,11 @@ public class PatchMgr : MonoBehaviour
     {
         try
         {
-            // 使用统一的 TravelMgr 获取方法，防止与 Modified-Plus 冲突
+            // 使用统一的 TravelMgr 获取方法
             var travelMgr = ResolveTravelMgr(autoCreate: true);
             if (travelMgr == null)
             {
-                MLogger?.LogWarning("[PVZRHTools] 无法找到 TravelMgr 组件，可能是 Modified-Plus 插件冲突或游戏未初始化");
+                MLogger?.LogWarning("[PVZRHTools] 无法找到 TravelMgr 组件，可能是游戏未初始化");
                 return;
             }
             
@@ -6087,7 +6196,7 @@ public class PatchMgr : MonoBehaviour
             }
             
             // 关键修复：设置 BoardTag 标志，使游戏识别并应用词条效果
-            // 这与 Modified-Plus 的处理方式一致，参考 HeiTa 和 SuperGoldPresent
+            // 参考 HeiTa 和 SuperGoldPresent 的处理方式
             try
             {
                 if (Board.Instance != null && GameAPP.board != null)

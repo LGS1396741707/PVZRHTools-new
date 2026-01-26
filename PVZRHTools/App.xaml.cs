@@ -27,8 +27,6 @@ public partial class App : Application
     {
         MessageBox.Show(e.Exception + "\n" + e.Exception.InnerException + "\n" +
                         e.Exception.InnerException?.InnerException);
-        File.WriteAllText("./ModifierError.txt",
-            e.Exception + "\n" + e.Exception.InnerException + "\n" + e.Exception.InnerException?.InnerException);
         e.Handled = true;
         Shutdown();
     }
@@ -46,8 +44,6 @@ public partial class App : Application
             catch (Exception ex)
             {
                 MessageBox.Show(ex.ToString());
-                File.WriteAllText("./ModifierError.txt",
-                    ex + "\n" + ex.InnerException + "\n" + ex.InnerException?.InnerException);
             }
 
         inited = false;
@@ -88,9 +84,9 @@ public partial class App : Application
                                 }
                             }
                         }
-                        catch (Exception ex)
+                        catch
                         {
-                            File.WriteAllText("./ModifierInitDataError.txt", $"从文件读取InitData失败: {ex.Message}\n{ex.StackTrace}");
+                            // 静默处理错误
                         }
                     }
                 };

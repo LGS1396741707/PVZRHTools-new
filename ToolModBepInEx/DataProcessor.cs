@@ -840,6 +840,43 @@ all");
                 {
                 }
 
+            // 播放特效
+            if (iga.PlayParticleId is not null && InGame())
+            {
+                try
+                {
+                    int particleId = (int)iga.PlayParticleId;
+                    // 在屏幕中央位置播放特效，使用第3行（中间行）
+                    Vector3 position = new Vector3(0, 0, 0);
+                    if (Board.Instance != null)
+                    {
+                        // 计算屏幕中央位置
+                        int centerRow = Board.Instance.rowNum / 2;
+                        int centerCol = Board.Instance.columnNum / 2;
+                        position = new Vector3(-5f + centerCol * 1.37f, centerRow * 0.8f, 0);
+                    }
+                    CreateParticle.SetParticle(particleId, position, Board.Instance?.rowNum / 2 ?? 2, true);
+                }
+                catch (Exception ex)
+                {
+                    MLogger?.LogError($"播放特效失败: {ex.Message}");
+                }
+            }
+
+            // 播放音效
+            if (iga.PlaySoundId is not null)
+            {
+                try
+                {
+                    int soundId = (int)iga.PlaySoundId;
+                    GameAPP.PlaySound(soundId, 0.5f, 1.0f);
+                }
+                catch (Exception ex)
+                {
+                    MLogger?.LogError($"播放音效失败: {ex.Message}");
+                }
+            }
+
             if (iga.SetZombieIdle is not null)
                 foreach (var z in Board.Instance.zombieArray)
                 {
@@ -1433,6 +1470,63 @@ all");
             {
                 var mousePos = Mouse.Instance.transform.position;
                 MiniPet.SetPet(Board.Instance, new Vector2(mousePos.x, mousePos.y), PetType.PetSnowBoss);
+            }
+
+            // 获取出怪列表
+            if (iga.GetZombieList == true && InGame())
+            {
+                try
+                {
+                    var zombieListData = PatchMgr.GetZombieListData();
+                    int currentWave = Board.Instance != null ? Board.Instance.theWave : 0;
+                    
+                    if (zombieListData != null)
+                    {
+                        DataSync.Instance.SendData(new ZombieListData
+                        {
+                            CurrentWave = currentWave,
+                            ZombieListByWave = zombieListData
+                        });
+                        MLogger?.LogInfo($"[PVZRHTools] 已发送出怪列表数据，当前波数: {currentWave}, 波次数: {zombieListData.Count}");
+                    }
+                    else
+                    {
+                        MLogger?.LogWarning("[PVZRHTools] 获取出怪列表失败，返回空数据");
+                        DataSync.Instance.SendData(new ZombieListData
+                        {
+                            CurrentWave = currentWave,
+                            ZombieListByWave = new Dictionary<int, List<int>>()
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MLogger?.LogError($"[PVZRHTools] 获取出怪列表异常: {ex.Message}\n{ex.StackTrace}");
+                }
+            }
+
+            // 修改出怪列表
+            if (iga.ModifyZombieList is not null && InGame())
+            {
+                try
+                {
+                    // 格式：waveIndex,zombieIndex,zombieType
+                    var parts = iga.ModifyZombieList.Split(',');
+                    if (parts.Length == 3)
+                    {
+                        if (int.TryParse(parts[0], out int waveIndex) &&
+                            int.TryParse(parts[1], out int zombieIndex) &&
+                            int.TryParse(parts[2], out int zombieType))
+                        {
+                            PatchMgr.SetZombieList(zombieIndex, waveIndex, (ZombieType)zombieType);
+                            MLogger?.LogInfo($"[PVZRHTools] 已修改出怪列表: 波次={waveIndex}, 索引={zombieIndex}, 类型={zombieType}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MLogger?.LogError($"[PVZRHTools] 修改出怪列表异常: {ex.Message}\n{ex.StackTrace}");
+                }
             }
 
             // 旗帜波词条功能设置

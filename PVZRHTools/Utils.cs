@@ -124,3 +124,10 @@ internal partial class ValuePropertiesSGC : JsonSerializerContext
 
 {
 }
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(ZombieListData))]
+internal partial class ZombieListDataSGC : JsonSerializerContext
+
+{
+}

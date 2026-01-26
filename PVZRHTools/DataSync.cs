@@ -106,7 +106,7 @@ public class DataSync
             {
                 json = JsonNode.Parse(data)!.AsObject();
             }
-            catch (JsonException ex)
+            catch (JsonException)
             {
                 // 如果解析失败，尝试查找第一个完整的 JSON 对象
                 // 通过计算大括号的匹配来找到 JSON 边界
@@ -157,14 +157,9 @@ public class DataSync
                     }
                 }
                 
-                // 如果仍然无法解析，记录错误信息
+                // 如果仍然无法解析，重新抛出原始异常
                 if (json == null)
                 {
-                    File.WriteAllText("./ModifierJsonError.txt", 
-                        $"JSON Parse Error: {ex.Message}\n" +
-                        $"Data length: {data.Length}\n" +
-                        $"Data preview (first 500 chars): {data.Substring(0, Math.Min(500, data.Length))}\n" +
-                        $"Full data: {data}");
                     throw; // 重新抛出原始异常
                 }
             }
@@ -175,9 +170,6 @@ public class DataSync
             var idNode = json["ID"];
             if (idNode == null)
             {
-                File.WriteAllText("./ModifierJsonError.txt", 
-                    $"JSON missing ID field\n" +
-                    $"Data: {data.Substring(0, Math.Min(500, data.Length))}");
                 return;
             }
             
@@ -186,12 +178,8 @@ public class DataSync
             {
                 id = (int)idNode;
             }
-            catch (Exception ex)
+            catch
             {
-                File.WriteAllText("./ModifierJsonError.txt", 
-                    $"JSON ID field conversion error: {ex.Message}\n" +
-                    $"ID value: {idNode}\n" +
-                    $"Data: {data.Substring(0, Math.Min(500, data.Length))}");
                 return;
             }
             
@@ -203,50 +191,24 @@ public class DataSync
                     try
                     {
                         var initData = json.Deserialize(InitDataSGC.Default.InitData);
-                        File.WriteAllText("./ModifierReceivedInitData.txt", 
-                            $"收到InitData: AdvBuffs={initData.AdvBuffs?.Length ?? 0}, " +
-                            $"UltiBuffs={initData.UltiBuffs?.Length ?? 0}, " +
-                            $"Debuffs={initData.Debuffs?.Length ?? 0}\n" +
-                            $"MainWindow.Instance={(MainWindow.Instance != null ? "存在" : "null")}\n" +
-                            $"App.InitData更新前={(App.InitData != null ? "存在" : "null")}");
                         
                         if (initData.AdvBuffs != null)
                         {
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 App.InitData = initData;
-                                File.WriteAllText("./ModifierInitDataUpdated.txt", 
-                                    $"App.InitData已更新: AdvBuffs={App.InitData?.AdvBuffs?.Length ?? 0}, " +
-                                    $"UltiBuffs={App.InitData?.UltiBuffs?.Length ?? 0}, " +
-                                    $"Debuffs={App.InitData?.Debuffs?.Length ?? 0}\n" +
-                                    $"MainWindow.Instance={(MainWindow.Instance != null ? "存在" : "null")}\n" +
-                                    $"ViewModel={(MainWindow.Instance?.ViewModel != null ? "存在" : "null")}");
                                 
                                 // 重新加载词条列表
                                 if (MainWindow.Instance != null && MainWindow.Instance.ViewModel != null)
                                 {
                                     MainWindow.Instance.ViewModel.ReloadBuffsFromInitData();
-                                    File.WriteAllText("./ModifierReloadBuffsCalled.txt", 
-                                        $"ReloadBuffsFromInitData已调用\n" +
-                                        $"TravelBuffs.Count={MainWindow.Instance.ViewModel.TravelBuffs?.Count ?? 0}\n" +
-                                        $"InGameBuffs.Count={MainWindow.Instance.ViewModel.InGameBuffs?.Count ?? 0}\n" +
-                                        $"Debuffs.Count={MainWindow.Instance.ViewModel.Debuffs?.Count ?? 0}");
-                                }
-                                else
-                                {
-                                    File.WriteAllText("./ModifierReloadBuffsFailed.txt", 
-                                        $"无法调用ReloadBuffsFromInitData: MainWindow.Instance={MainWindow.Instance != null}, ViewModel={MainWindow.Instance?.ViewModel != null}");
                                 }
                             });
                         }
-                        else
-                        {
-                            File.WriteAllText("./ModifierInitDataAdvBuffsNull.txt", "收到的InitData.AdvBuffs为null");
-                        }
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        File.WriteAllText("./ModifierInitDataError.txt", $"InitData更新错误: {ex.Message}\n{ex.StackTrace}\n数据预览: {data.Substring(0, Math.Min(500, data.Length))}");
+                        // 静默处理错误，避免影响程序运行
                     }
                     break;
                 }
@@ -306,7 +268,13 @@ public class DataSync
                 }
                 case 15:
                 {
-                    Application.Current.Dispatcher.Invoke(() => MainWindow.Instance!.ViewModel.SyncAll());
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (MainWindow.Instance != null && MainWindow.Instance.ViewModel != null)
+                        {
+                            MainWindow.Instance.ViewModel.SyncAll();
+                        }
+                    });
                     break;
                 }
                 case 16:
@@ -319,11 +287,44 @@ public class DataSync
                     });
                     break;
                 }
+                case 17:
+                {
+                    // 接收出怪列表数据
+                    try
+                    {
+                        var zombieListData = json.Deserialize(ZombieListDataSGC.Default.ZombieListData);
+                        
+                        // ZombieListData是struct，不能与null比较，检查ZombieListByWave是否为null
+                        if (zombieListData.ZombieListByWave != null)
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                try
+                                {
+                                    if (MainWindow.Instance != null)
+                                    {
+                                        MainWindow.Instance.SetZombieListData(
+                                            zombieListData.ZombieListByWave, 
+                                            zombieListData.CurrentWave);
+                                    }
+                                }
+                                catch
+                                {
+                                    // 静默处理错误
+                                }
+                            });
+                        }
+                    }
+                    catch
+                    {
+                        // 静默处理错误
+                    }
+                    break;
+                }
             }
         }
         catch (Exception ex)
         {
-            File.WriteAllText("./ModifierError.txt", ex.Message + ex.StackTrace);
             MessageBox.Show(ex.ToString());
             Application.Current.Dispatcher.Invoke(Application.Current.Shutdown);
         }
@@ -381,6 +382,7 @@ public class DataSync
             7 => GameModesSGC.Default.GameModes,
             15 => SyncAllSGC.Default.SyncAll,
             16 => ExitSGC.Default.Exit,
+            17 => ZombieListDataSGC.Default.ZombieListData,
             _ => throw new InvalidOperationException()
         };
         modifierSocket.Send(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(data, jti)));

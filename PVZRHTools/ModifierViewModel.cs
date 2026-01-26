@@ -2143,8 +2143,34 @@ public partial class ModifierViewModel : ObservableObject
     [ObservableProperty] public partial List<KeyValuePair<int, string>> ZombieSeaTypes { get; set; }
 
     [ObservableProperty] public partial int ZombieType { get; set; }
+    
+    /// <summary>
+    /// 特效ID（用于检索分区播放特效）
+    /// </summary>
+    [ObservableProperty] public partial string ParticleId { get; set; } = "";
+    
+    /// <summary>
+    /// 音效ID（用于检索分区播放音效）
+    /// </summary>
+    [ObservableProperty] public partial string SoundId { get; set; } = "";
 
     #endregion Properties
+
+    /// <summary>
+    /// 播放特效
+    /// </summary>
+    public void PlayParticle(int particleId)
+    {
+        App.DataSync.Value.SendData(new InGameActions { PlayParticleId = particleId });
+    }
+
+    /// <summary>
+    /// 播放音效
+    /// </summary>
+    public void PlaySound(int soundId)
+    {
+        App.DataSync.Value.SendData(new InGameActions { PlaySoundId = soundId });
+    }
 
     /// <summary>
     /// 从更新后的InitData重新加载词条列表（包括MOD添加的词条）
@@ -2154,7 +2180,6 @@ public partial class ModifierViewModel : ObservableObject
         if (App.InitData == null)
         {
             System.Diagnostics.Debug.WriteLine("ReloadBuffsFromInitData: App.InitData 为 null");
-            File.WriteAllText("./ModifierReloadBuffsNull.txt", "App.InitData 为 null，无法重新加载词条");
             return;
         }
 
@@ -2281,19 +2306,11 @@ public partial class ModifierViewModel : ObservableObject
             OnPropertyChanged(nameof(HealthZombies));
             
             System.Diagnostics.Debug.WriteLine($"ReloadBuffsFromInitData: 完成 - TravelBuffs={TravelBuffs.Count}, InGameBuffs={InGameBuffs.Count}, Debuffs={Debuffs.Count}, AllInGameBuffs={AllInGameBuffs.Count}");
-            File.WriteAllText("./ModifierReloadBuffsComplete.txt", 
-                $"ReloadBuffsFromInitData完成:\n" +
-                $"TravelBuffs.Count={TravelBuffs.Count}\n" +
-                $"InGameBuffs.Count={InGameBuffs.Count}\n" +
-                $"Debuffs.Count={Debuffs.Count}\n" +
-                $"InGameDebuffs.Count={InGameDebuffs.Count}\n" +
-                $"AllInGameBuffs.Count={AllInGameBuffs.Count}");
         }
         catch (Exception ex)
         {
             // 记录错误但不中断程序
             System.Diagnostics.Debug.WriteLine($"ReloadBuffsFromInitData 错误: {ex.Message}\n{ex.StackTrace}");
-            File.WriteAllText("./ModifierReloadBuffsError.txt", $"ReloadBuffsFromInitData 错误: {ex.Message}\n{ex.StackTrace}");
         }
     }
 }

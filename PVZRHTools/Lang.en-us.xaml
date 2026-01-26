@@ -42,6 +42,11 @@
     <s:String x:Key="Tab11.Results.Bullets">Bullets</s:String>
     <s:String x:Key="Tab11.Results.Items">Items</s:String>
     <s:String x:Key="Tab11.Results.NoResults">No matches found</s:String>
+    <s:String x:Key="Tab11.EffectPlay.Header">Effect and Sound Playback</s:String>
+    <s:String x:Key="Tab11.EffectPlay.ParticleID">Particle ID</s:String>
+    <s:String x:Key="Tab11.EffectPlay.PlayParticle">Generate Particle</s:String>
+    <s:String x:Key="Tab11.EffectPlay.SoundID">Sound ID</s:String>
+    <s:String x:Key="Tab11.EffectPlay.PlaySound">Generate Sound</s:String>
     <s:String x:Key="Tab1.Page1.Header">BasicProperties</s:String>
     <s:String x:Key="Tab1.Page2.Header">PresentModify</s:String>
     <s:String x:Key="Tab1.Page3.Header">DataModify</s:String>
